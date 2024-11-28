@@ -25,17 +25,19 @@ class SchoolClass(models.Model):
         return f"{self.grade} - {self.name}"
 
 
-# مدل درس
+
 class Subject(models.Model):
     name = models.CharField(max_length=100)
+
 
     def __str__(self):
         return self.name
 
 
-# مدل معلم
+
 class Teacher(models.Model):
     name = models.CharField(max_length=100)
+
 
     def __str__(self):
         return self.name

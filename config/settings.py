@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'Attendance',
     'Survey',
     'WeeklySchedule',
+    'Grades',
     
 ]
 
@@ -157,7 +158,7 @@ REST_FRAMEWORK = {
 
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Your Project API',
+    'TITLE': 'Helli Scholl Project API',
     'DESCRIPTION': 'Your project description',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
@@ -165,6 +166,60 @@ SPECTACULAR_SETTINGS = {
 }
 
 
+
+
+
+
+
+# settings.py
+
+import os
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'django.log'),  # مسیر فایل لاگ
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['file'],
+        'level': 'DEBUG',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
+
+
+
+# تنظیمات ارسال ایمیل
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' 
+EMAIL_HOST = 'smtp.gmail.com'  
+EMAIL_PORT = 587 
+EMAIL_USE_TLS = True  
+EMAIL_HOST_USER = 'mahdiyar.mahdi31313@gmail.com' 
+EMAIL_HOST_PASSWORD = 'lepv vlij oyig awjz'  # رمز عبور ایمیل ارسال‌کننده
+
+DEFAULT_FROM_EMAIL = 'mahdiyar.mahdi31313@gmail.com'  
 
 
 

@@ -3,22 +3,33 @@
 
 from rest_framework import serializers
 from .models import Student, Admin
+from WeeklySchedule.models import Grade
 
 class StudentSignupSerializer(serializers.ModelSerializer):
+    grade = serializers.CharField(write_only=True)
+
     class Meta:
         model = Student
-        fields = ['first_name', 'last_name','national_code', 'password', 'grade']
+        fields = ['first_name', 'last_name', 'national_code', 'password', 'grade']
 
     def create(self, validated_data):
+        # پیدا کردن Grade از طریق name
+        grade_name = validated_data.pop('grade')
+        try:
+            grade = Grade.objects.get(name=grade_name)
+        except Grade.DoesNotExist:
+            raise serializers.ValidationError({"grade": "کلاسی با این نام یافت نشد."})
+
         student = Student(
             first_name=validated_data['first_name'],
             last_name=validated_data['last_name'],
             national_code=validated_data['national_code'],
-            grade=validated_data['grade']
+            grade=grade
         )
         student.set_password(validated_data['password'])
         student.save()
         return student
+
     def validate_national_code(self, value):
         """اعتبارسنجی برای کد ملی که 10 رقم باشد"""
         if len(value) != 10:
@@ -26,16 +37,18 @@ class StudentSignupSerializer(serializers.ModelSerializer):
         return value
 
 
+
 class AdminSignupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Admin
-        fields = ['first_name', 'last_name','national_code', 'password']
+        fields = ['first_name', 'last_name','national_code', 'password', 'role']
 
     def create(self, validated_data):
         admin = Admin(
             first_name=validated_data['first_name'],
             last_name=validated_data['last_name'],
             national_code=validated_data['national_code'],
+            role = validated_data['role']
         )
         admin.set_password(validated_data['password'])
         admin.save()
@@ -93,3 +106,7 @@ class LoginSerializer(serializers.Serializer):
             'role': role,
             'national_code': user.national_code,
         }
+
+
+
+

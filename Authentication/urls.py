@@ -1,6 +1,6 @@
 # urls.py
 from django.urls import path
-from .views import StudentSignupView, LoginView , AdminSignupView
+from .views import StudentSignupView, LoginView , AdminSignupView, RegisterEmailView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 
@@ -9,5 +9,6 @@ urlpatterns = [
     path('signup/admin/', AdminSignupView.as_view(), name='admin_signup'),
     path('login/', LoginView.as_view(), name='login'),
     path('login/refresh/', TokenRefreshView.as_view(), name='login-refresh'),
+    path('email_registration/', RegisterEmailView.as_view(), name='email-registration')
 ]
 

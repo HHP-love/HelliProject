@@ -1,6 +1,4 @@
-
-# Create your views here.
-from django.shortcuts import render
+from django_filters import rest_framework as filters
 from rest_framework import generics, mixins
 from .models import Absence, Student
 from .serializers import AbsenceSerializer
@@ -9,63 +7,158 @@ from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema,OpenApiParameter, OpenApiTypes
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.request import Request
+from rest_framework.views import APIView
 
 #region AbsenceListView
 
-@extend_schema(
-    summary="Retrieve a list of absences",
-    description=(
-        "This endpoint retrieves a list of all absence records in the system. "
-        "You can apply filters based on student details such as name, grade, and national code, "
-        "as well as the absence date and presence status. "
-        "The response is paginated and includes a detailed list of absences."
-    ),
-    parameters=[
-        OpenApiParameter(
-            name='student__name', 
-            description="Filter absences by the student's name (partial match allowed).",
-            required=False,
-            type=OpenApiTypes.STR
-        ),
-        OpenApiParameter(
-            name='student__grade', 
-            description="Filter absences by the student's grade (exact match).",
-            required=False,
-            type=OpenApiTypes.INT
-        ),
-        OpenApiParameter(
-            name='student__national_code', 
-            description="Filter absences by the student's unique national code.",
-            required=False,
-            type=OpenApiTypes.STR
-        ),
-        OpenApiParameter(
-            name='date', 
-            description="Filter absences by the date of absence (in YYYY-MM-DD format).",
-            required=False,
-            type=OpenApiTypes.DATE
-        ),
-        OpenApiParameter(
-            name='is_present', 
-            description="Filter absences based on the presence status (True for present, False for absent).",
-            required=False,
-            type=OpenApiTypes.BOOL
-        ),
-    ],
-    responses={
-        200: AbsenceSerializer(many=True),
-        400: OpenApiTypes.OBJECT,
-        404: OpenApiTypes.OBJECT,
-    }
-)
-class AbsenceListView(generics.ListAPIView):
-    queryset = Absence.objects.all()
-    serializer_class = AbsenceSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['student__first_name', 'student__last_name','student__grade', 'student__national_code', 'date', 'status']
+from .filters import AbsenceFilter
 
-#endregion
+class AbsenceListView(APIView):
+
+    """
+    Filter Absences via POST.
+
+    ### Authorization
+    - **JWT Token** is required in the `Authorization` header with the format:
+      `Bearer <your_token_here>`
+
+    ### Request Body
+    ```json
+    {
+        "student__first_name": "Ali",
+        "student__last_name": "Rezaei",
+        "student__grade_range": [1, 3],
+        "date_range": {
+            "start": "2024-01-01",
+            "end": "2024-12-31"
+        },
+        "status": "absent"
+    }
+    ```
+
+    ### Test Example
+    **Curl Command:**
+    ```bash
+    curl -X POST http://127.0.0.1:8000/api/absences/filter/ \
+    -H "Authorization: Bearer <your_token_here>" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "student__first_name": "Ali",
+        "student__grade_range": [1, 3],
+        "date_range": {
+            "start": "2024-01-01",
+            "end": "2024-12-31"
+        },
+        "status": "absent"
+    }'
+    ```
+
+    ### Expected Response
+    - **Status Code:** `200 OK`
+    - **Response Body:**
+    ```json
+    [
+        {
+            "student": "Ali Rezaei",
+            "date": "2024-01-15",
+            "status": "absent"
+        },
+        {
+            "student": "Ali Rezaei",
+            "date": "2024-02-20",
+            "status": "absent"
+        }
+    ]
+    ```
+
+    ### Error Responses
+    - **Status Code:** `400 Bad Request`
+    - **Response Body:**
+    ```json
+    {
+        "date_range": [
+            "Start date must be before end date."
+        ],
+        "student__grade_range": [
+            "Grade must be a valid range."
+        ]
+    }
+    ```
+    ### Filters
+    - `student__first_name`: **Partial match** (case insensitive)
+    - `student__last_name`: **Partial match** (case insensitive)
+    - `student__grade`: **Exact match**
+    - `student__grade_range`: **Range filter**
+    - `student__national_code`: **Exact match**
+    - `date`: **Exact match**
+    - `date_range`: **From-to range filter**
+    - `status`: **Choices** - `present`, `absent`
+    """
+
+    def post(self, request, *args, **kwargs):
+        data = request.data
+        queryset = Absence.objects.all()
+        filterset = AbsenceFilter(data, queryset=queryset)
+        if not filterset.is_valid():
+            return Response(filterset.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = AbsenceSerializer(filterset.qs, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+# @extend_schema(
+#     summary="Retrieve a list of absences",
+#     description=(
+#         "This endpoint retrieves a list of all absence records in the system. "
+#         "You can apply filters based on student details such as name, grade, and national code, "
+#         "as well as the absence date and presence status. "
+#         "The response is paginated and includes a detailed list of absences."
+#     ),
+#     parameters=[
+#         OpenApiParameter(
+#             name='student__name', 
+#             description="Filter absences by the student's name (partial match allowed).",
+#             required=False,
+#             type=OpenApiTypes.STR
+#         ),
+#         OpenApiParameter(
+#             name='student__grade', 
+#             description="Filter absences by the student's grade (exact match).",
+#             required=False,
+#             type=OpenApiTypes.INT
+#         ),
+#         OpenApiParameter(
+#             name='student__national_code', 
+#             description="Filter absences by the student's unique national code.",
+#             required=False,
+#             type=OpenApiTypes.STR
+#         ),
+#         OpenApiParameter(
+#             name='date', 
+#             description="Filter absences by the date of absence (in YYYY-MM-DD format).",
+#             required=False,
+#             type=OpenApiTypes.DATE
+#         ),
+#         OpenApiParameter(
+#             name='is_present', 
+#             description="Filter absences based on the presence status (True for present, False for absent).",
+#             required=False,
+#             type=OpenApiTypes.BOOL
+#         ),
+#     ],
+#     responses={
+#         200: AbsenceSerializer(many=True),
+#         400: OpenApiTypes.OBJECT,
+#         404: OpenApiTypes.OBJECT,
+#     }
+# )
+# class AbsenceListView(generics.ListAPIView):
+#     queryset = Absence.objects.all()
+#     serializer_class = AbsenceSerializer
+#     filter_backends = [DjangoFilterBackend]
+#     filterset_fields = ['student__first_name', 'student__last_name','student__grade', 'student__national_code', 'date', 'status']
+
+# #endregion
 
 
 
@@ -135,6 +228,8 @@ class RecordAbsenceView(APIView):
     """
     ویو برای ثبت غیبت دانش‌آموز بر اساس کد ملی و تاریخ.
     """
+
+
 
     def post(self, request, *args, **kwargs):
         national_code = request.data.get("national_code")

@@ -3,6 +3,7 @@ from django.db import models
 from WeeklySchedule.models import Grade
 from django.contrib.auth.hashers import make_password, check_password
 
+
 class UserBase(models.Model):
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
@@ -26,6 +27,7 @@ class UserBase(models.Model):
 class Student(UserBase):
     grade = models.ForeignKey(Grade, on_delete=models.PROTECT, related_name='student')
 
+
     def __str__(self):
         return f"{self.first_name} {self.last_name} - دانش‌آموز با کد ملی {self.national_code}"
 
@@ -34,3 +36,19 @@ class Admin(UserBase):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}  - ادمین با کد ملی {self.national_code}"
+
+
+class Email(models.Model):
+    user = models.OneToOneField(
+        'Student', on_delete=models.CASCADE, null=True, blank=True
+    )
+    admin = models.OneToOneField(
+        'Admin', on_delete=models.CASCADE, null=True, blank=True
+    )
+    email = models.EmailField(unique=True)
+    is_verified = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)  # تاریخ ثبت ایمیل
+    updated_at = models.DateTimeField(auto_now=True)      # تاریخ آخرین به‌روزرسانی
+
+    def __str__(self):
+        return f"ایمیل {self.email} برای {self.user}"
