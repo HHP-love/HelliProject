@@ -13,20 +13,3 @@ def send_email_view(request):
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
     
 
-
-
-#     message1 = (
-#     "Subject here",
-#     "Here is the message",
-#     "from@example.com",
-#     ["first@example.com", "other@example.com"],
-# )
-
-# message2 = (
-#     "Another Subject",
-#     "Here is another message",
-#     "from@example.com",
-#     ["second@test.com"],
-# )
-
-# send_mass_mail((message1, message2), fail_silently=False)

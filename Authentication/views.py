@@ -5,9 +5,6 @@ from rest_framework import status
 from rest_framework import serializers
 from .serializers import StudentSignupSerializer, AdminSignupSerializer, LoginSerializer
 from django.urls import reverse
-from .models import Student, Admin
-
-# 
 
 
 # Student Signup View
@@ -109,53 +106,101 @@ class LoginView(APIView):
 
 
 
-from rest_framework.generics import RetrieveUpdateAPIView
-from django.core.exceptions import ObjectDoesNotExist
 from .models import Email
+
 from .serializers import EmailSerializer
+from .models import Email
 
-class RegisterEmailView(RetrieveUpdateAPIView):
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
+from rest_framework import viewsets, status
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .serializers import EmailSerializer
+from .models import Email
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .serializers import EmailSerializer
+from .models import Email
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .serializers import EmailSerializer
+from .models import Email
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
+
+
+class UpdateEmailView(APIView):
     """
-    ویوی ثبت یا به‌روزرسانی ایمیل کاربر با استفاده از کد ملی
+    ویو برای به‌روزرسانی ایمیل کاربران بر اساس نقش.
     """
-    serializer_class = EmailSerializer
+
+    def put(self, request):
+        user = request.user
+
+        if not user:
+            return Response({"detail": "کاربر معتبر نیست."}, status=status.HTTP_400_BAD_REQUEST)
 
 
-    def get_object(self):
-        national_code = self.request.user.national_code
+        # بررسی نقش کاربر
+        if user.role not in ['Student', 'Admin']:
+            return Response(
+                {"detail": "نقش کاربر معتبر نیست."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # بررسی وضعیت request.data
+        print(f"Request Data: {request.data}")
+
+        # اعتبارسنجی ایمیل
+        serializer = EmailSerializer(data=request.data)
+
+        # چاپ داده‌های Serializer برای دیباگ
+        print(f"Serializer Data: {serializer.initial_data}")  # مشاهده داده‌های اولیه
+
+        if not serializer.is_valid():
+            print(f"Serializer Errors: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        email = serializer.validated_data.get('email')
+
+
         try:
-            email, created = Email.objects.get_or_create(user__national_code=national_code)
-            return email
-        except ObjectDoesNotExist:
-            return None
+            validate_email(email)  # اعتبارسنجی ایمیل
+        except ValidationError:
+            return Response(
+                {"detail": "ایمیل وارد شده معتبر نیست."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # ذخیره یا به‌روزرسانی ایمیل در مدل Email
+        try:
+            email_obj, created = Email.objects.get_or_create(user=user)
+            email_obj.email = email
+            email_obj.is_verified = False  # ایمیل تایید نشده است
+            print(email_obj)
+            email_obj.save()
+
+            message = "ایمیل جدید ایجاد شد." if created else "ایمیل به‌روزرسانی شد."
+            return Response(
+                    {"detail": message},
+                    status=status.HTTP_200_OK
+                )
+
+        except Exception as e:
+            return Response(
+                {"detail": f"خطای داخلی سرور: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 
 
-
-
-# from .utils import verify_email_token
-
-# class VerifyEmailView(APIView):
-#     def get(self, request):
-#         token = request.query_params.get('token')
-#         user_id = verify_email_token(token)
-#         if not user_id:
-#             return Response({"error": "توکن نامعتبر است یا منقضی شده است."}, status=status.HTTP_400_BAD_REQUEST)
-
-#         try:
-#             user = Student.objects.get(id=user_id) or Admin.objects.get(id=user_id)
-#             user.is_email_verified = True
-#             user.save()
-#             return Response({"message": "ایمیل با موفقیت تأیید شد."}, status=status.HTTP_200_OK)
-#         except (Student.DoesNotExist, Admin.DoesNotExist):
-#             return Response({"error": "کاربر یافت نشد."}, status=status.HTTP_404_NOT_FOUND)
-
-
-
-# def send_verification_email(user):
-#     token = generate_email_verification_token(user)
-#     verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"  # لینک
-#     subject = "تأیید ایمیل"
-#     message = f"برای تأیید ایمیل خود روی لینک زیر کلیک کنید:\n{verification_url}"
-#     send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])

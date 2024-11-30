@@ -2,15 +2,15 @@
 
 
 from rest_framework import serializers
-from .models import Student, Admin
+from .models import Student,UserBase
 from WeeklySchedule.models import Grade
 
 class StudentSignupSerializer(serializers.ModelSerializer):
     grade = serializers.CharField(write_only=True)
 
     class Meta:
-        model = Student
-        fields = ['first_name', 'last_name', 'national_code', 'password', 'grade']
+        model = UserBase
+        fields = ['first_name', 'last_name', 'national_code', 'password', 'grade', 'role']
 
     def create(self, validated_data):
         # پیدا کردن Grade از طریق name
@@ -20,11 +20,12 @@ class StudentSignupSerializer(serializers.ModelSerializer):
         except Grade.DoesNotExist:
             raise serializers.ValidationError({"grade": "کلاسی با این نام یافت نشد."})
 
-        student = Student(
+        student = UserBase(
             first_name=validated_data['first_name'],
             last_name=validated_data['last_name'],
             national_code=validated_data['national_code'],
-            grade=grade
+            grade=grade,  # ارتباط با Grade
+            role=validated_data['role']
         )
         student.set_password(validated_data['password'])
         student.save()
@@ -38,28 +39,32 @@ class StudentSignupSerializer(serializers.ModelSerializer):
 
 
 
+
 class AdminSignupSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Admin
-        fields = ['first_name', 'last_name','national_code', 'password', 'role']
+        model = UserBase
+        fields = ['first_name', 'last_name','national_code', 'password', 'role', 'role2']
 
     def create(self, validated_data):
-        admin = Admin(
+        admin = UserBase(
             first_name=validated_data['first_name'],
             last_name=validated_data['last_name'],
             national_code=validated_data['national_code'],
-            role = validated_data['role']
+            role = validated_data['role'],
+            role2 = validated_data['role2']
         )
         admin.set_password(validated_data['password'])
         admin.save()
         return admin
 
 
-# serializers.py
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
-from .models import Student, Admin
+from .models import Student
+
+
+
 
 class LoginSerializer(serializers.Serializer):
     national_code = serializers.CharField()
@@ -73,14 +78,11 @@ class LoginSerializer(serializers.Serializer):
         user = None
         role = None
         try:
-            user = Student.objects.get(national_code=national_code)
-            role = "student"
-        except Student.DoesNotExist:
-            try:
-                user = Admin.objects.get(national_code=national_code)
-                role = "admin"
-            except Admin.DoesNotExist:
-                raise serializers.ValidationError("کاربری با این کد ملی یافت نشد.")
+            user = UserBase.objects.get(national_code=national_code)
+            role = 'student' if user.role == 'Student' else 'admin'
+        except UserBase.DoesNotExist:
+            raise serializers.ValidationError("کاربری با این کد ملی یافت نشد.")
+
 
         # بررسی رمز عبور
         if not user.check_password(password):
@@ -89,6 +91,7 @@ class LoginSerializer(serializers.Serializer):
         # اضافه کردن نقش به داده‌ها
         data['user'] = user
         data['role'] = role
+
         return data
 
     def create(self, validated_data):
@@ -107,6 +110,13 @@ class LoginSerializer(serializers.Serializer):
             'national_code': user.national_code,
         }
 
+# serializers.py
+from rest_framework import serializers
+from .models import Email  
 
+from rest_framework import serializers
+
+class EmailSerializer(serializers.Serializer):
+    email = serializers.EmailField()
 
 
