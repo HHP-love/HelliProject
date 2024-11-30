@@ -104,73 +104,52 @@ class LoginView(APIView):
     
 
 
-from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
-
-# views.py
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from .models import Email, Student, Admin
-from .serializers import EmailSerializer  
-from rest_framework.permissions import IsAuthenticated
-
-
-# class UpdateEmailView(APIView):
-
-#     def put(self, request):
-#         user = request.user
-
-#         # Validate the email from the request
-#         serializer = EmailSerializer(data=request.data)
-#         if serializer.is_valid():
-#             email = serializer.validated_data['email']
-#         else:
-#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#         # Check if the user is an instance of Student or Admin
-#         if hasattr(user, 'student'):  # Check if user has an associated Student
-#             user_type = 'Student'
-#         elif hasattr(user, 'admin'):  # Check if user has an associated Admin
-#             user_type = 'Admin'
-#         else:
-#             return Response({"detail": "کاربر معتبر نیست."}, status=status.HTTP_400_BAD_REQUEST)
-
-#         try:
-#             # Try to get the associated email
-#             user_email = Email.objects.get(user=user)
-#             # Update email if it exists
-#             user_email.email = email
-#             user_email.is_verified = False  # or handle verification differently
-#             user_email.save()
-#             return Response({"detail": "ایمیل با موفقیت به‌روزرسانی شد."}, status=status.HTTP_200_OK)
-#         except Email.DoesNotExist:
-#             # If the email does not exist, create a new one
-#             Email.objects.create(user=user, email=email, is_verified=False)
-#             return Response({"detail": "ایمیل جدید با موفقیت ثبت شد."}, status=status.HTTP_201_CREATED)
-#         except Exception as e:
-#             return Response({"detail": f"یک خطا رخ داد: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-
-
-from django.contrib.contenttypes.models import ContentType
-
+from .models import Email
 
 from .serializers import EmailSerializer
 from .models import Email
+
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
+from rest_framework import viewsets, status
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .serializers import EmailSerializer
+from .models import Email
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .serializers import EmailSerializer
+from .models import Email
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .serializers import EmailSerializer
+from .models import Email
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
+
 
 class UpdateEmailView(APIView):
     """
     ویو برای به‌روزرسانی ایمیل کاربران بر اساس نقش.
     """
 
-
     def put(self, request):
         user = request.user
 
-        print(f"User: {user}")
-        print(f"User Type: {type(user)}")  # چاپ نوع واقعی user
+        if not user:
+            return Response({"detail": "کاربر معتبر نیست."}, status=status.HTTP_400_BAD_REQUEST)
+
+
         # بررسی نقش کاربر
         if user.role not in ['Student', 'Admin']:
             return Response(
@@ -178,28 +157,50 @@ class UpdateEmailView(APIView):
                 status=status.HTTP_403_FORBIDDEN
             )
 
+        # بررسی وضعیت request.data
+        print(f"Request Data: {request.data}")
+
         # اعتبارسنجی ایمیل
         serializer = EmailSerializer(data=request.data)
-        if serializer.is_valid():
-            email = serializer.validated_data['email']
-        else:
+
+        # چاپ داده‌های Serializer برای دیباگ
+        print(f"Serializer Data: {serializer.initial_data}")  # مشاهده داده‌های اولیه
+
+        if not serializer.is_valid():
+            print(f"Serializer Errors: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        email = serializer.validated_data.get('email')
+
+
+        try:
+            validate_email(email)  # اعتبارسنجی ایمیل
+        except ValidationError:
+            return Response(
+                {"detail": "ایمیل وارد شده معتبر نیست."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         # ذخیره یا به‌روزرسانی ایمیل در مدل Email
         try:
             email_obj, created = Email.objects.get_or_create(user=user)
             email_obj.email = email
             email_obj.is_verified = False  # ایمیل تایید نشده است
+            print(email_obj)
             email_obj.save()
 
             message = "ایمیل جدید ایجاد شد." if created else "ایمیل به‌روزرسانی شد."
             return Response(
-                {"detail": message},
-                status=status.HTTP_200_OK
-            )
+                    {"detail": message},
+                    status=status.HTTP_200_OK
+                )
 
         except Exception as e:
             return Response(
                 {"detail": f"خطای داخلی سرور: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+
+

@@ -28,6 +28,14 @@ class UserBase(AbstractBaseUser, PermissionsMixin):
         choices=[('Student', 'Student'), ('Admin', 'Admin')],
         default='Student'
     )
+    grade = models.ForeignKey(
+        'WeeklySchedule.Grade',
+        on_delete=models.PROTECT,
+        related_name='students',
+        null=True,
+        blank=True
+    )
+    role2 = models.CharField(max_length=32, null= True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
@@ -40,28 +48,11 @@ class UserBase(AbstractBaseUser, PermissionsMixin):
         return f"{self.first_name} {self.last_name} - {self.role} ({self.national_code})"
 
 
-class Student(UserBase):
-    grade = models.ForeignKey(
-        'WeeklySchedule.Grade',
-        on_delete=models.PROTECT,
-        related_name='students'
-    )
-
-    class Meta:
-        verbose_name = "Student"
-        verbose_name_plural = "Students"
+class Student(models.Model):
+    name = models.CharField(max_length=64)
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name} - دانش‌آموز ({self.national_code})"
-
-
-
-class Admin(UserBase):
-    
-    def __str__(self):
-        return f"{self.first_name} {self.last_name} - دانش‌آموز ({self.national_code})"
-    
-
+        return f"{self.name})"
 
 
 from django.db import models

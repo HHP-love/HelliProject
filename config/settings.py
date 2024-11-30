@@ -204,4 +204,4 @@ EMAIL_HOST_PASSWORD = 'lepv vlij oyig awjz'  # رمز عبور ایمیل ارس
 DEFAULT_FROM_EMAIL = 'mahdiyar.mahdi31313@gmail.com'  
 
 
-AUTH_USER_MODEL = 'Authentication.Student'
+AUTH_USER_MODEL = 'Authentication.UserBase'
