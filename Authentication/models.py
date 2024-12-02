@@ -64,14 +64,31 @@ class Email(models.Model):
     مدل ایمیل برای مدیریت ایمیل‌های کاربران.
     """
     user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,  # ارجاع به مدل کاربر سفارشی
+        settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE,
-        related_name='email_info'  # دسترسی به ایمیل کاربر از طریق user.email_info
+        related_name='email_info'
     )
     email = models.EmailField(unique=True)
     is_verified = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)  # تاریخ ثبت ایمیل
-    updated_at = models.DateTimeField(auto_now=True)      # تاریخ آخرین به‌روزرسانی
+    created_at = models.DateTimeField(auto_now_add=True)  
+    updated_at = models.DateTimeField(auto_now=True)      
 
     def __str__(self):
-        return f"ایمیل {self.email} برای {self.user}"
+        return f"Email: ({self.email}) for {self.user}   and is_verified : {self.is_verified}"
+    
+
+
+
+
+from datetime import timedelta
+from django.utils.timezone import now
+
+class EmailVerificationCode(models.Model):
+    mail = models.ForeignKey(Email, on_delete=models.CASCADE, related_name='verification_codes')
+    code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    def is_valid(self):
+        return now() < self.expires_at
+

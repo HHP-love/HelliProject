@@ -110,13 +110,30 @@ class LoginSerializer(serializers.Serializer):
             'national_code': user.national_code,
         }
 
-# serializers.py
-from rest_framework import serializers
-from .models import Email  
 
-from rest_framework import serializers
+
 
 class EmailSerializer(serializers.Serializer):
     email = serializers.EmailField()
+
+
+
+class SendVerificationCodeSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        if not value:
+            raise serializers.ValidationError("Email field is required.")
+        return value
+    
+
+
+class VerifyCodeSerializer(serializers.Serializer):
+    code = serializers.CharField(max_length=6)
+
+    def validate_code(self, value):
+        if not value.isdigit() or len(value) != 6:
+            raise serializers.ValidationError("Invalid verification code.")
+        return value
 
 
