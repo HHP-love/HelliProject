@@ -1,9 +1,10 @@
 # user_app/signals.py
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .models import UserBase, Student
+from .models import UserBase, EmailVerificationCode
 from WeeklySchedule.models import Teacher
 import logging
+from django.utils.timezone import now
 
 logger = logging.getLogger(__name__)
 
@@ -22,3 +23,7 @@ def handle_user_creation(sender, instance, created, **kwargs):
     # else:
         logger.info(f"No action taken for user with national_code {instance.national_code} due to unmatched roles")
 
+
+@receiver(post_save, sender=EmailVerificationCode)
+def cleanup_expired_codes(sender, instance, **kwargs):
+    EmailVerificationCode.objects.filter(expires_at__lt=now()).delete()

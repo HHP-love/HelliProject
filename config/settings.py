@@ -33,7 +33,6 @@ INSTALLED_APPS = [
     'Survey',
     'WeeklySchedule',
     'Grades',
-
     
 ]
 
@@ -133,6 +132,7 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.UserRateThrottle',  # برای کاربران احراز هویت شده
     ],
     'DEFAULT_THROTTLE_RATES': {
+        'send_verification_code': '5/hour',  
         'anon': '10/minute',  # کاربران ناشناس تنها می‌توانند 10 درخواست در هر دقیقه ارسال کنند
         'user': '1000/day',  # کاربران احراز هویت شده تا 1000 درخواست در روز می‌توانند ارسال کنند
     }

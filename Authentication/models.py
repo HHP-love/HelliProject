@@ -79,16 +79,23 @@ class Email(models.Model):
 
 
 
-
-from datetime import timedelta
+from hashlib import sha256
 from django.utils.timezone import now
 
 class EmailVerificationCode(models.Model):
     mail = models.ForeignKey(Email, on_delete=models.CASCADE, related_name='verification_codes')
-    code = models.CharField(max_length=6)
+    code = models.CharField(max_length=64)  # Hashed
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
+    attempts = models.IntegerField(default=0)
+
+    def set_code(self, raw_code):
+        self.code = sha256(raw_code.encode()).hexdigest()
+
+    def verify_code(self, raw_code):
+        return self.code == sha256(raw_code.encode()).hexdigest()
 
     def is_valid(self):
         return now() < self.expires_at
+
 

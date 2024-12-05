@@ -203,31 +203,45 @@ class UpdateEmailView(APIView):
 
 
 
-from django.core.mail import send_mail
 from django.utils.timezone import now
 from datetime import timedelta
 import random
 from .models import EmailVerificationCode
+from .throttles import SendVerificationCodeThrottle
+from django.template.loader import render_to_string
+from django.core.mail import EmailMultiAlternatives
 
 class SendVerificationCodeView(APIView):
+    throttle_classes = [SendVerificationCodeThrottle]
     def post(self, request):
         user = request.user
         try:
             email_instance = Email.objects.get(user=user)
         except Email.DoesNotExist:
-            return Response({"error": "Email not found for this user."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "An error occurred."}, status=status.HTTP_400_BAD_REQUEST)
 
         code = f"{random.randint(100000, 999999)}"
         expires_at = now() + timedelta(minutes=5)
 
-        EmailVerificationCode.objects.create(mail=email_instance, code=code, expires_at=expires_at)
+        EmailVerificationCode.objects.filter(mail=email_instance).delete()
+        verification_code = EmailVerificationCode(mail=email_instance, expires_at=expires_at)
+        verification_code.set_code(code)
+        verification_code.save()
+        
 
-        send_mail(
-            subject="Your Verification Code",
-            message=f"Your verification code is {code}. It will expire in 5 minutes.",
-            from_email="no-reply@example.com",
-            recipient_list=[email_instance.email],
-        )
+        html_content = render_to_string('emails/verification_code.html', {
+            'user_name': user.username,
+            'code': code,
+        })
+
+
+        subject = "Your Verification Code"
+        from_email = "admin@gmail.com"
+        recipient_list = [email_instance.email]
+
+        email = EmailMultiAlternatives(subject, "Your verification code is in the HTML version.", from_email, recipient_list)
+        email.attach_alternative(html_content, "text/html")
+        email.send()
 
         return Response({"message": "Verification code sent."}, status=status.HTTP_200_OK)
     
@@ -239,33 +253,28 @@ class VerifyCodeView(APIView):
         user = request.user
         serializer = VerifyCodeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        code = serializer.validated_data['code']
-
-        if not code:
-            return Response({"error": "Verification code is required."}, status=status.HTTP_400_BAD_REQUEST)
+        raw_code = serializer.validated_data['code']
 
         try:
             email_instance = Email.objects.get(user=user)
-        except Email.DoesNotExist:
-            return Response({"error": "Email not found for this user."}, status=status.HTTP_404_NOT_FOUND)
+            verification_code = EmailVerificationCode.objects.get(mail=email_instance)
+        except (Email.DoesNotExist, EmailVerificationCode.DoesNotExist):
+            return Response({"error": "An error occurred."}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            verification_code = EmailVerificationCode.objects.get(mail=email_instance, code=code)
-        except EmailVerificationCode.DoesNotExist:
-            return Response({"error": "Invalid verification code."}, status=status.HTTP_400_BAD_REQUEST)
+        if not verification_code.verify_code(raw_code) or not verification_code.is_valid():
+            if verification_code.attempts >= 5:
+                return Response({"error": "Too many attempts. Please request a new code."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
 
-
-        if not verification_code.is_valid():
-            verification_code.delete()  
-            return Response({"error": "Verification code has expired."}, status=status.HTTP_400_BAD_REQUEST)
+            verification_code.attempts += 1
+            
+            verification_code.save()
+            return Response({"error": "Invalid or expired verification code."}, status=status.HTTP_400_BAD_REQUEST)
 
         email_instance.is_verified = True
         email_instance.save()
-
-        EmailVerificationCode.objects.filter(mail=email_instance).delete()
+        verification_code.delete()
 
         return Response({"message": "Email successfully verified."}, status=status.HTTP_200_OK)
-
 
 
 
