@@ -60,11 +60,7 @@ class AdminSignupSerializer(serializers.ModelSerializer):
 
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth import authenticate
-from .models import Student
-
-
-
+from django.http import JsonResponse
 
 class LoginSerializer(serializers.Serializer):
     national_code = serializers.CharField()
@@ -103,12 +99,31 @@ class LoginSerializer(serializers.Serializer):
         refresh['role'] = role
         refresh['national_code'] = user.national_code
         
-        return {
+        # return {
+        #     'refresh': str(refresh),
+        #     'access': str(refresh.access_token),
+        #     'role': role,
+        #     'national_code': user.national_code,
+        # }
+        
+        response = JsonResponse({
             'refresh': str(refresh),
             'access': str(refresh.access_token),
             'role': role,
             'national_code': user.national_code,
-        }
+            'name': user.first_name + " " + user.last_name,
+        })
+
+        # ارسال توکن Refresh در کوکی
+        response.set_cookie(
+            'refresh_token', str(refresh), 
+            httponly=True, secure=True, samesite='Strict'
+        )
+
+        # ارسال توکن Access در هدر Authorization
+        response['Authorization'] = f"Bearer {str(refresh.access_token)}"
+        
+        return response
 
 
 

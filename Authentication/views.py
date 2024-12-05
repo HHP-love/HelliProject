@@ -97,10 +97,48 @@ class LoginView(APIView):
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
-            tokens = serializer.save()
-            return Response(tokens, status=status.HTTP_200_OK)
+            response = serializer.save()
+            return response
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+from django.http import JsonResponse
+
+class LogoutView(APIView):
+    def post(self, request):
+        response = JsonResponse({"message": "Logged out successfully"})
+
+        response.delete_cookie('refresh_token', httponly=True, secure=True, samesite='Strict')
+
+        response.delete_cookie('access_token', httponly=True, secure=True, samesite='Strict')
+        
+        return response
+
+
+# from rest_framework.permissions import IsAuthenticated
+# from rest_framework_simplejwt.authentication import JWTAuthentication
+
+class UserProfileView(APIView):
+    # authentication_classes = [JWTAuthentication]
+    # permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+
+            user = request.user
+            profile_data = {
+                "national_code": user.national_code,
+                "role": user.role,
+                "name": f"{user.first_name} {user.last_name}",
+                "email": user.email,
+            }
+            return Response(profile_data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": "اطلاعات کاربر یافت نشد."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+
 
 from .models import Email
 from django.core.exceptions import ValidationError

@@ -150,11 +150,6 @@ SPECTACULAR_SETTINGS = {
 
 
 
-
-
-
-# settings.py
-
 import os
 
 LOGGING = {
@@ -205,3 +200,40 @@ DEFAULT_FROM_EMAIL = 'mahdiyar.mahdi31313@gmail.com'
 
 
 AUTH_USER_MODEL = 'Authentication.UserBase'
+
+
+
+from datetime import timedelta
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),  # مدت زمان اعتبار توکن‌های Access
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # مدت زمان اعتبار توکن‌های Refresh
+    'ROTATE_REFRESH_TOKENS': True,    # محیط تست
+    # 'ROTATE_REFRESH_TOKENS': False,  # تنظیمات برای جلوگیری از چرخش اتوماتیک توکن‌های Refresh
+    # 'BLACKLIST_AFTER_ROTATION': True,  # وقتی که توکن‌ها چرخش پیدا می‌کنند، آن‌ها را به لیست سیاه اضافه کنید.
+    # 'ALGORITHM': 'HS256',  # الگوریتم رمزنگاری توکن
+    # 'SIGNING_KEY': SECRET_KEY,  # کلید امضای JWT که باید مشابه کلید Django باشد
+}
+
+
+
+
+# SESSION_COOKIE_AGE = 60 * 60 * 72  
+
+# # فقط کوکی‌های امن در HTTPS ارسال شوند
+# # SESSION_COOKIE_SECURE = True  # برای استفاده در محیط‌های HTTPS
+# SESSION_COOKIE_SECURE = False      #محیط تست
+
+# # HttpOnly: اطمینان از اینکه کوکی‌ها توسط جاوا اسکریپت قابل دسترسی نیستند (جلوگیری از XSS)
+# SESSION_COOKIE_HTTPONLY = True
+
+# # SameSite: این ویژگی باعث جلوگیری از حملات CSRF می‌شود
+# SESSION_COOKIE_SAMESITE = 'Strict'
+
+# # این مورد برای کوکی‌های رفرش نیز صدق می‌کند، بنابراین باید در تنظیمات `CSRF_COOKIE_*` هم تنظیم شود.
+# # CSRF_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = False      # محیط تست
+# CSRF_COOKIE_HTTPONLY = True
+# CSRF_COOKIE_SAMESITE = 'Strict'
+
+# # همچنین برای پشتیبانی از کوکی‌های امن در محیط‌های تولیدی، باید به این گزینه توجه کنید.
+# SECURE_SSL_REDIRECT = True  # در صورتی که از HTTPS استفاده می‌کنید

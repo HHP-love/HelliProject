@@ -7,7 +7,7 @@ from django.utils import timezone
 class Survey(models.Model):
     title = models.CharField(max_length=255)  # عنوان نظرسنجی
     description = models.TextField()  # توضیحات نظرسنجی
-    is_active = models.BooleanField(default=True)
+    is_active_survay = models.BooleanField(default=True)
     start_date = models.DateTimeField()  # تاریخ شروع
     end_date = models.DateTimeField()  # تاریخ پایان
 
