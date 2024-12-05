@@ -94,12 +94,21 @@ class LoginView(APIView):
         description="Authenticates a user with national code and password, returning JWT tokens with role and national code.",
         tags=["Authentication"],
     )
+    # def post(self, request):
+    #     serializer = LoginSerializer(data=request.data)
+    #     if serializer.is_valid():
+    #         response = serializer.save()
+    #         return response
+    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     def post(self, request):
-        serializer = LoginSerializer(data=request.data)
-        if serializer.is_valid():
-            response = serializer.save()
-            return response
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer = LoginSerializer(data=request.data)  
+        if serializer.is_valid():  
+            data = serializer.save()  
+            return Response(data, status=status.HTTP_200_OK)  
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
+
+
 
 from django.http import JsonResponse
 
@@ -129,8 +138,9 @@ class UserProfileView(APIView):
                 "national_code": user.national_code,
                 "role": user.role,
                 "name": f"{user.first_name} {user.last_name}",
-                "email": user.email,
+
             }
+
             return Response(profile_data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": "اطلاعات کاربر یافت نشد."}, status=status.HTTP_400_BAD_REQUEST)
@@ -230,7 +240,7 @@ class SendVerificationCodeView(APIView):
         
 
         html_content = render_to_string('emails/verification_code.html', {
-            'user_name': user.username,
+            'user_name': user.last_name,
             'code': code,
         })
 

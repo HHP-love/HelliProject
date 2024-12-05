@@ -94,36 +94,42 @@ class LoginSerializer(serializers.Serializer):
         user = validated_data.get('user')
         role = validated_data.get('role')
 
-        # ایجاد توکن و افزودن نقش و کد ملی
+
         refresh = RefreshToken.for_user(user)
         refresh['role'] = role
         refresh['national_code'] = user.national_code
+        refresh['name'] = user.first_name + " " + user.last_name,
         
-        # return {
-        #     'refresh': str(refresh),
-        #     'access': str(refresh.access_token),
-        #     'role': role,
-        #     'national_code': user.national_code,
-        # }
-        
-        response = JsonResponse({
+        return {
             'refresh': str(refresh),
             'access': str(refresh.access_token),
             'role': role,
             'national_code': user.national_code,
-            'name': user.first_name + " " + user.last_name,
-        })
-
-        # ارسال توکن Refresh در کوکی
-        response.set_cookie(
-            'refresh_token', str(refresh), 
-            httponly=True, secure=True, samesite='Strict'
-        )
-
-        # ارسال توکن Access در هدر Authorization
-        response['Authorization'] = f"Bearer {str(refresh.access_token)}"
+            'name' : user.first_name + " " + user.last_name,
+        }
         
-        return response
+        # response = JsonResponse({
+        #     'refresh': str(refresh),
+        #     'access': str(refresh.access_token),
+        #     'role': role,
+        #     'national_code': user.national_code,
+        #     'name': user.first_name + " " + user.last_name,
+        # })
+
+        # # ارسال توکن Refresh در کوکی
+        # response.set_cookie(
+        #     'refresh_token', str(refresh), 
+        #     httponly=True, secure=True, samesite='Strict'
+        # )
+        # response.set_cookie(
+        #     'access_token', str(refresh), 
+        #     httponly=True, secure=True, samesite='Strict'
+        # )
+
+        # # ارسال توکن Access در هدر Authorization
+        # response['Authorization'] = f"Bearer {str(refresh.access_token)}"
+        
+        # return response
 
 
 
