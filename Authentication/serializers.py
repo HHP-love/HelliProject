@@ -67,69 +67,52 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
     
     def validate(self, data):
+        """
+        اعتبارسنجی کد ملی و رمز عبور کاربر
+        """
         national_code = data.get("national_code")
         password = data.get("password")
         
-        # جستجو برای دانش‌آموز یا ادمین
-        user = None
-        role = None
+        # پیدا کردن کاربر بر اساس کد ملی
         try:
             user = UserBase.objects.get(national_code=national_code)
-            role = 'student' if user.role == 'Student' else 'admin'
         except UserBase.DoesNotExist:
             raise serializers.ValidationError("کاربری با این کد ملی یافت نشد.")
-
 
         # بررسی رمز عبور
         if not user.check_password(password):
             raise serializers.ValidationError("رمز عبور اشتباه است.")
-        
-        # اضافه کردن نقش به داده‌ها
+
+        # تعیین نقش کاربر
+        role = 'student' if user.role == 'Student' else 'admin'
+
+        # افزودن کاربر و نقش به داده‌های اعتبارسنجی شده
         data['user'] = user
         data['role'] = role
-
         return data
 
     def create(self, validated_data):
+        """
+        تولید توکن‌ها و بازگرداندن داده‌های احراز هویت
+        """
         user = validated_data.get('user')
         role = validated_data.get('role')
 
-
+        # تولید توکن‌های JWT
         refresh = RefreshToken.for_user(user)
         refresh['role'] = role
         refresh['national_code'] = user.national_code
-        refresh['name'] = user.first_name + " " + user.last_name,
-        
+        refresh['name'] = f"{user.first_name} {user.last_name}"
+
+        # بازگرداندن داده‌ها
         return {
             'refresh': str(refresh),
             'access': str(refresh.access_token),
-            'role': role,
+            'role': user.role,
             'national_code': user.national_code,
-            'name' : user.first_name + " " + user.last_name,
+            'name': f"{user.first_name} {user.last_name}",
         }
-        
-        # response = JsonResponse({
-        #     'refresh': str(refresh),
-        #     'access': str(refresh.access_token),
-        #     'role': role,
-        #     'national_code': user.national_code,
-        #     'name': user.first_name + " " + user.last_name,
-        # })
 
-        # # ارسال توکن Refresh در کوکی
-        # response.set_cookie(
-        #     'refresh_token', str(refresh), 
-        #     httponly=True, secure=True, samesite='Strict'
-        # )
-        # response.set_cookie(
-        #     'access_token', str(refresh), 
-        #     httponly=True, secure=True, samesite='Strict'
-        # )
-
-        # # ارسال توکن Access در هدر Authorization
-        # response['Authorization'] = f"Bearer {str(refresh.access_token)}"
-        
-        # return response
 
 
 
