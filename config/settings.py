@@ -135,7 +135,7 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.UserRateThrottle',  
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'send_verification_code': '5/hour',  
+        'send_verification_code': '6/hour',  
         'anon': '10/minute',  
         'user': '1000/day', 
     }
@@ -202,7 +202,7 @@ AUTH_USER_MODEL = 'Authentication.UserBase'
 
 from datetime import timedelta
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=1), 
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=20), 
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7), 
     'ROTATE_REFRESH_TOKENS': True,    # محیط تست
     # 'ROTATE_REFRESH_TOKENS': False,  # تنظیمات برای جلوگیری از چرخش اتوماتیک توکن‌های Refresh
@@ -214,7 +214,7 @@ SIMPLE_JWT = {
 
 
 
-# SESSION_COOKIE_AGE = 60 * 60 * 72  
+# SESSION_COOKIE_AGE = 60 * 60 * 24 * 7
 
 
 # SESSION_COOKIE_SECURE = True  # برای استفاده در محیط‌های HTTPS
