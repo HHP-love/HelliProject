@@ -12,7 +12,7 @@ urlpatterns = [
     path('authentication/', include('Authentication.urls')),
     path('survay/', include('Survey.urls')),
     path('weekly-schedule/', include('WeeklySchedule.urls')),
-    path('grades/', include('WeeklySchedule.urls')),
+    path('grades/', include('Grades.urls')),
 
     #swagger and test
     path('schema/', SpectacularAPIView.as_view(), name='schema'),

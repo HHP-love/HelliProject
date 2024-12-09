@@ -22,7 +22,7 @@ class StudentSerializer(serializers.ModelSerializer):
 class ClassroomSerializer(serializers.ModelSerializer):
     teachers = TeacherSerializer(many=True, read_only=True)
     students = StudentSerializer(many=True, read_only=True)
-    subject = serializers.CharField(source='subject.name')  # نام درس به جای شناسه
+    subject = serializers.CharField(source='subject.name') 
 
     class Meta:
         model = Classroom

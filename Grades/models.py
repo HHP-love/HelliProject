@@ -2,28 +2,18 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from WeeklySchedule.models import Teacher
 from Authentication.models import Student
-# Create your models here.
-
 
 class Semester(models.Model):
     name = models.CharField(max_length=50) 
-    
-    class Meta:
-        verbose_name = 'ترم'
-        verbose_name_plural = 'ترم‌ها'
-    
+
     def __str__(self):
         return self.name
-
 
 
 class Subject(models.Model):
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=10, unique=True)
-    
-    class Meta:
-        verbose_name = 'درس'
-        verbose_name_plural = 'دروس'
+
     
     def __str__(self):
         return self.name
@@ -36,10 +26,6 @@ class Classroom(models.Model):
     students = models.ManyToManyField(Student, related_name='classrooms')
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE, related_name='classrooms')
     
-    class Meta:
-        verbose_name = 'کلاس'
-        verbose_name_plural = 'کلاس‌ها'
-    
     def __str__(self):
         return f"{self.name} - {self.subject.name}"
 
@@ -47,10 +33,6 @@ class Classroom(models.Model):
 class GradeCategory(models.Model):
     name = models.CharField(max_length=50)  # نام نوع نمره (مثلاً میان‌ترم)
     description = models.TextField(blank=True, null=True)
-    
-    class Meta:
-        verbose_name = 'نوع نمره'
-        verbose_name_plural = 'انواع نمره‌ها'
     
     def __str__(self):
         return self.name
