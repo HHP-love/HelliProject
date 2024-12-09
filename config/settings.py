@@ -33,7 +33,6 @@ INSTALLED_APPS = [
     'Survey',
     'WeeklySchedule',
     'Grades',
-
     
 ]
 
@@ -45,6 +44,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'middleware.save_response.SaveResponseMiddleware',
+    'middleware.auto_refresh_jwt.AutoRefreshJWTMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -52,7 +53,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -113,7 +114,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -123,18 +124,20 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
+    'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
+        # 'middleware.CustomJWTAuthentication.CustomJWTAuthentication'
+    ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
         
     'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.AnonRateThrottle',  # برای کاربران ناشناس
-        'rest_framework.throttling.UserRateThrottle',  # برای کاربران احراز هویت شده
+        'rest_framework.throttling.AnonRateThrottle',  
+        'rest_framework.throttling.UserRateThrottle',  
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '10/minute',  # کاربران ناشناس تنها می‌توانند 10 درخواست در هر دقیقه ارسال کنند
-        'user': '1000/day',  # کاربران احراز هویت شده تا 1000 درخواست در روز می‌توانند ارسال کنند
+        'send_verification_code': '6/hour',  
+        'anon': '10/minute',  
+        'user': '1000/day', 
     }
 }
 
@@ -144,16 +147,8 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'Your project description',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
-    # OTHER SETTINGS
 }
 
-
-
-
-
-
-
-# settings.py
 
 import os
 
@@ -174,7 +169,7 @@ LOGGING = {
         'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'django.log'),  # مسیر فایل لاگ
+            'filename': os.path.join(BASE_DIR, 'django.log'),  
             'formatter': 'verbose',
         },
     },
@@ -192,16 +187,75 @@ LOGGING = {
 }
 
 
-
-# تنظیمات ارسال ایمیل
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' 
 EMAIL_HOST = 'smtp.gmail.com'  
 EMAIL_PORT = 587 
 EMAIL_USE_TLS = True  
 EMAIL_HOST_USER = 'mahdiyar.mahdi31313@gmail.com' 
-EMAIL_HOST_PASSWORD = 'lepv vlij oyig awjz'  # رمز عبور ایمیل ارسال‌کننده
-
+EMAIL_HOST_PASSWORD = 'lepv vlij oyig awjz'  
 DEFAULT_FROM_EMAIL = 'mahdiyar.mahdi31313@gmail.com'  
 
 
 AUTH_USER_MODEL = 'Authentication.UserBase'
+
+
+
+from datetime import timedelta
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=20), 
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7), 
+    'ROTATE_REFRESH_TOKENS': True,    # محیط تست
+    # 'ROTATE_REFRESH_TOKENS': False,  # تنظیمات برای جلوگیری از چرخش اتوماتیک توکن‌های Refresh
+    # 'BLACKLIST_AFTER_ROTATION': True,  # وقتی که توکن‌ها چرخش پیدا می‌کنند، آن‌ها را به لیست سیاه اضافه کنید.
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,  
+}
+
+
+
+
+# SESSION_COOKIE_AGE = 60 * 60 * 24 * 7
+
+
+# SESSION_COOKIE_SECURE = True  # برای استفاده در محیط‌های HTTPS
+
+
+# # HttpOnly: اطمینان از اینکه کوکی‌ها توسط جاوا اسکریپت قابل دسترسی نیستند (جلوگیری از XSS)
+# SESSION_COOKIE_HTTPONLY = True
+
+# # SameSite: این ویژگی باعث جلوگیری از حملات CSRF می‌شود
+# SESSION_COOKIE_SAMESITE = 'Strict'
+
+
+# CSRF_COOKIE_SECURE = True
+
+
+# CSRF_COOKIE_HTTPONLY = True
+# CSRF_COOKIE_SAMESITE = 'Strict'
+
+# # همچنین برای پشتیبانی از کوکی‌های امن در محیط‌های تولیدی، باید به این گزینه توجه کنید.
+# SECURE_SSL_REDIRECT = True  # در صورتی که از HTTPS استفاده می‌کنید
+
+
+
+
+
+
+
+# تنظیم کوکی‌ها
+SESSION_COOKIE_SECURE = False  # در لوکال باید False باشد
+CSRF_COOKIE_SECURE = False     # در لوکال باید False باشد
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_HSTS_SECONDS = 0        # در لوکال نباید HSTS فعال باشد
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = False
+SECURE_SSL_REDIRECT = False    # در لوکال نباید ریدایرکت به HTTPS شود
+CORS_ALLOW_CREDENTIALS = True
+
+
+
+# CORS_ORIGIN_ALLOW_ALL = False  # یا اینکه دامنه‌های مجاز را مشخص کنید
+# CORS_ORIGIN_WHITELIST = [
+#     'https://your-client-domain.com',  # دامنه‌ای که درخواست‌ها از آن ارسال می‌شود
+# ]

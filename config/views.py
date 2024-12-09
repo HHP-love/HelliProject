@@ -13,3 +13,8 @@ def send_email_view(request):
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
     
 
+
+from django.shortcuts import render
+
+def redoc_view(request):
+    return render(request, 'redoc.html')
