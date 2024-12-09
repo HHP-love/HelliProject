@@ -1,10 +1,12 @@
-from drf_spectacular.utils import extend_schema, inline_serializer
+from drf_spectacular.utils import extend_schema, inline_serializer, OpenApiResponse, OpenApiParameter
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import serializers
-from .serializers import StudentSignupSerializer, AdminSignupSerializer, LoginSerializer, EmailSerializer
-
+from .serializers import * 
+from rest_framework.permissions import IsAuthenticated
+from .permissions import *
+from .models import *
 
 # Student Signup View
 class StudentSignupView(APIView):
@@ -120,7 +122,6 @@ class LoginView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-from django.http import JsonResponse
 
 class LogoutView(APIView):
     def post(self, request):
@@ -133,7 +134,6 @@ class LogoutView(APIView):
         return response
 
 
-from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 class UserProfileView(APIView):
@@ -298,4 +298,167 @@ class VerifyCodeView(APIView):
         return Response({"message": "Email successfully verified."}, status=status.HTTP_200_OK)
 
 
+
+
+from django.core.exceptions import ObjectDoesNotExist
+
+class ChangePassword(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrOwner]
+    throttle_classes = [SendVerificationCodeThrottle]
+
+
+    @extend_schema(
+        summary="Change password",
+        description="This endpoint allows the authenticated user or an admin to change the password."
+                    " The user must provide the current password and a new password."
+                    " Admin users can update the password for any user if they have the correct credentials.",
+        request=ChangePasswordSerializer,
+        responses={
+            status.HTTP_200_OK: OpenApiResponse(
+                description="Password successfully updated.",
+                examples=[{
+                    "application/json": {
+                        "message": "Password updated successfully."
+                    }
+                }]
+            ),
+            status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description="Bad request, invalid data or incorrect previous password.",
+                examples=[{
+                    "application/json": {
+                        "error": "Incorrect previous password."
+                    }
+                }]
+            ),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="User not found.",
+                examples=[{
+                    "application/json": {
+                        "error": "User not found."
+                    }
+                }]
+            )
+        },
+        parameters=[
+            OpenApiParameter(
+                name='previous_password',
+                type=str,
+                required=True,
+                description="The current password of the user."
+            ),
+            OpenApiParameter(
+                name='new_password',
+                type=str,
+                required=True,
+                description="The new password to be set."
+            )
+        ]
+    )
+    def patch(self, request):
+        serializer = ChangePasswordSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = UserBase.objects.get(national_code=request.user.national_code)
+        except ObjectDoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        previous_password = serializer.validated_data['previous_password']
+        new_password = serializer.validated_data['new_password']
+
+        if not user.check_password(previous_password):
+            return Response({"error": "Incorrect previous password."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(new_password)
+        user.save()
+
+        return Response({"message": "Password updated successfully."}, status=status.HTTP_200_OK)
+
+
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
+from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
+from rest_framework.exceptions import NotFound
+from django.core.mail import send_mail
+from django.utils import timezone
+from datetime import timedelta
+from .models import PasswordResetCode, Email
+from .serializers import EmailSerializer
+
+
+class RequestPasswordResetView(APIView):
+    permission_classes = [AllowAny]  
+    throttle_classes = [SendVerificationCodeThrottle]  
+
+    def post(self, request):
+        email_serializer = EmailSerializer(data=request.data)
+        if not email_serializer.is_valid():
+            return Response(email_serializer.errors, status=HTTP_400_BAD_REQUEST)
+
+        email = email_serializer.validated_data['email']
+
+        try:
+            user = Email.objects.get(email=email).user
+        except Email.DoesNotExist:
+            raise NotFound({"detail": "User not found."})
+
+        reset_code = PasswordResetCode.objects.filter(user=user).first()
+        print(reset_code)
+
+        if reset_code:
+            if reset_code.is_valid():
+                print("salam")
+                return Response({"message": "A valid reset code has already been sent."}, status=HTTP_200_OK)
+            else:
+                PasswordResetCode.objects.filter(user=user).delete()
+                print("salam")
+
+        reset_code, created = PasswordResetCode.objects.get_or_create(user=user)
+        # print(reset_code)
+        reset_code.generate_code()  
+        reset_code.expires_at = timezone.now() + timedelta(minutes=5)
+        reset_code.save()  
+
+        send_mail(
+            'Password Reset Request',
+            f'Hello {user.first_name},\n\nYour password reset code is: {reset_code.code}\nThis code will expire in 5 minutes.',
+            'no-reply@yourapp.com',
+            [email],
+            fail_silently=False,
+        )
+
+        return Response({"message": "Password reset code sent."}, status=HTTP_200_OK)
+
+class PasswordResetView(APIView):
+    throttle_classes = [SendVerificationCodeThrottle]
+    
+    def post(self, request):
+        serializer = PasswordResetSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        code = serializer.validated_data['code']
+        new_password = serializer.validated_data['new_password']
+
+        try:
+            reset_code = PasswordResetCode.objects.get(code=code)
+        except PasswordResetCode.DoesNotExist:
+            return Response({"detail": "Invalid or expired code."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            reset_code.verify_code(code)
+        except ValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = reset_code.user
+        user.set_password(new_password)
+        user.save()
+
+        reset_code.delete()
+
+        return Response({"message": "Password reset successfully."}, status=status.HTTP_200_OK)
 

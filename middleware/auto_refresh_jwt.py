@@ -14,6 +14,8 @@ class AutoRefreshJWTMiddleware(MiddlewareMixin):
     """
     
     def process_request(self, request):
+        if request.path.startswith('/request-password-reset/'):
+            return 
         access_token = request.COOKIES.get('access_token') or request.headers.get('Authorization', '').split(' ')[-1]
         refresh_token = request.COOKIES.get('refresh_token')
 
@@ -62,6 +64,5 @@ class AutoRefreshJWTMiddleware(MiddlewareMixin):
                 secure=False if settings.DEBUG else True,
                 samesite='Lax',
             )
-            # همچنین می‌توانیم توکن جدید را در هدر Authorization بگذاریم
             response['Authorization'] = f'Bearer {new_access_token}'
         return response

@@ -2,7 +2,7 @@
 
 
 from rest_framework import serializers
-from .models import Student,UserBase
+from .models import UserBase
 from WeeklySchedule.models import Grade
 
 class StudentSignupSerializer(serializers.ModelSerializer):
@@ -24,7 +24,7 @@ class StudentSignupSerializer(serializers.ModelSerializer):
             first_name=validated_data['first_name'],
             last_name=validated_data['last_name'],
             national_code=validated_data['national_code'],
-            grade=grade,  # ارتباط با Grade
+            grade=grade,  
             role=validated_data['role']
         )
         student.set_password(validated_data['password'])
@@ -73,20 +73,16 @@ class LoginSerializer(serializers.Serializer):
         national_code = data.get("national_code")
         password = data.get("password")
         
-        # پیدا کردن کاربر بر اساس کد ملی
         try:
             user = UserBase.objects.get(national_code=national_code)
         except UserBase.DoesNotExist:
             raise serializers.ValidationError("کاربری با این کد ملی یافت نشد.")
 
-        # بررسی رمز عبور
         if not user.check_password(password):
             raise serializers.ValidationError("رمز عبور اشتباه است.")
 
-        # تعیین نقش کاربر
         role = 'student' if user.role == 'Student' else 'admin'
 
-        # افزودن کاربر و نقش به داده‌های اعتبارسنجی شده
         data['user'] = user
         data['role'] = role
         return data
@@ -98,13 +94,11 @@ class LoginSerializer(serializers.Serializer):
         user = validated_data.get('user')
         role = validated_data.get('role')
 
-        # تولید توکن‌های JWT
         refresh = RefreshToken.for_user(user)
         refresh['role'] = role
         refresh['national_code'] = user.national_code
         refresh['name'] = f"{user.first_name} {user.last_name}"
 
-        # بازگرداندن داده‌ها
         return {
             'refresh': str(refresh),
             'access': str(refresh.access_token),
@@ -115,11 +109,8 @@ class LoginSerializer(serializers.Serializer):
 
 
 
-
-
 class EmailSerializer(serializers.Serializer):
     email = serializers.EmailField()
-
 
 
 class SendVerificationCodeSerializer(serializers.Serializer):
@@ -141,3 +132,21 @@ class VerifyCodeSerializer(serializers.Serializer):
         return value
 
 
+
+from rest_framework import serializers
+
+class ChangePasswordSerializer(serializers.Serializer):
+    previous_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True, min_length=8)
+
+    # def validate_new_password(self, value):
+    #     if value.isdigit():
+    #         raise serializers.ValidationError("Password cannot be entirely numeric.")
+    #     return value
+
+
+
+
+class PasswordResetSerializer(serializers.Serializer):
+    code = serializers.CharField(max_length=6)
+    new_password = serializers.CharField(write_only=True, min_length=8)

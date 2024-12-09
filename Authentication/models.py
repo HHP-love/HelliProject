@@ -55,9 +55,7 @@ class Student(models.Model):
         return f"{self.name})"
 
 
-from django.db import models
 from django.conf import settings
-
 
 class Email(models.Model):
     """
@@ -75,7 +73,6 @@ class Email(models.Model):
 
     def __str__(self):
         return f"Email: ({self.email}) for {self.user}   and is_verified : {self.is_verified}"
-    
 
 
 
@@ -97,5 +94,44 @@ class EmailVerificationCode(models.Model):
 
     def is_valid(self):
         return now() < self.expires_at
+
+
+
+
+import random
+import string
+from django.utils import timezone
+from datetime import timedelta
+from django.core.exceptions import ValidationError
+
+class PasswordResetCode(models.Model):
+    user = models.ForeignKey(UserBase, on_delete=models.CASCADE)
+    code = models.CharField(max_length=6)
+    expires_at = models.DateTimeField(default=timezone.now() + timedelta(minutes=5))
+    attempts = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def generate_code(self):
+        self.code = ''.join(random.choices(string.digits, k=6))
+        # self.expires_at = timezone.now() + timedelta(minutes=5)
+        print(self.code)
+        self.attempts = 0
+        self.save()
+
+    def is_valid(self):
+        if timezone.now() > self.expires_at:
+            # raise ValidationError("Code expired.")
+            return False
+        return True
+
+    def verify_code(self, input_code):
+        if self.attempts >= 3:
+            raise ValidationError("Too many failed attempts.")
+        if self.code != input_code:
+            self.attempts += 1
+            self.save()
+            raise ValidationError("Invalid code.")
+        self.is_valid()
+        return True
 
 
