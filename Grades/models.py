@@ -6,18 +6,25 @@ from WeeklySchedule.models import Teacher
 
 
 
+from django.utils.text import slugify
+
 class Student(models.Model):
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
+    full_name = models.CharField(max_length=50, editable=False)
     national_code = models.CharField(max_length=11, unique=True)
     grade = models.CharField(max_length=50)
+    slug = models.SlugField(max_length=100, unique=True, blank=True, editable=False)
 
     def save(self, *args, **kwargs):
         self.full_name = f"{self.first_name} {self.last_name}"
+        if not self.slug:
+            self.slug = slugify(f"{self.full_name}-{self.national_code}")
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.full_name} ({self.national_code})"
+
 
 
 class Semester(models.Model):
@@ -32,14 +39,21 @@ class Semester(models.Model):
 class Subject(models.Model):
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=10, unique=True)
+    slug = models.SlugField(max_length=100, unique=True, blank=True, editable=False)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
 
 
+
 class Classroom(models.Model):
     name = models.CharField(max_length=100)
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='classrooms')
+    subject = models.ManyToManyField(Subject,related_name='classrooms')
     teachers = models.ManyToManyField(Teacher, related_name='classrooms')
     students = models.ManyToManyField(Student, related_name='classrooms')
 
@@ -57,23 +71,23 @@ class GradeCategory(models.Model):
 
 
 class Grade(models.Model):
-    STATUS_CHOICES = [
-        ('pending', _('Pending')),
-        ('finalized', _('Finalized')),
-    ]
+    # STATUS_CHOICES = [
+    #     ('pending', _('Pending')),
+    #     ('finalized', _('Finalized')),
+    # ]
 
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='grades')
     classroom = models.ForeignKey(Classroom, on_delete=models.CASCADE, related_name='grades')
     category = models.ForeignKey(GradeCategory, on_delete=models.CASCADE, related_name='grades')
     score = models.DecimalField(max_digits=5, decimal_places=2)
     max_score = models.DecimalField(max_digits=5, decimal_places=2, default=20)
-    status = models.CharField(
-        max_length=10,
-        choices=STATUS_CHOICES,
-        default='pending',
-    )
-    recorded_by = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True, blank=True)
-    date_recorded = models.DateTimeField(auto_now_add=True)
+    # status = models.CharField(
+    #     max_length=10,
+    #     choices=STATUS_CHOICES,
+    #     default='pending',
+    # )
+    # recorded_by = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True, blank=True)
+    date_assigned = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = 'Grade'
@@ -100,31 +114,41 @@ class Grade(models.Model):
 class GPA(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='gpa_records')
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE, related_name='gpa_records')
-    gpa = models.DecimalField(max_digits=4, decimal_places=2)
+    gpa = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
 
     class Meta:
-        ordering = ['-gpa'] 
-        
-    def calculate_weighted_gpa(self):
+        ordering = ['-gpa']
+
+    @property
+    def calculated_gpa(self):
         total_weighted_score = 0
         total_weights = 0
-        
+
         grades = Grade.objects.filter(student=self.student, classroom__semester=self.semester)
-        
+
         for grade in grades:
-            weight = grade.category.weight  # وزن دسته‌بندی نمره
+            weight = grade.category.weight
             total_weighted_score += grade.score * weight
             total_weights += weight
-        
-        if total_weights > 0:
-            self.gpa = total_weighted_score / total_weights
-        else:
-            self.gpa = 0
 
-        self.save()
+        if total_weights > 0:
+            return total_weighted_score / total_weights
+        else:
+            return 0
 
     def __str__(self):
-        return f"{self.student.full_name} - {self.semester.name}: {self.gpa}"
+        return f"{self.student.full_name} - {self.semester.name}: {self.calculated_gpa}"
+
+class GPAHistory(models.Model):
+    gpa_record = models.ForeignKey(GPA, on_delete=models.CASCADE, related_name='history')
+    old_gpa = models.DecimalField(max_digits=4, decimal_places=2)
+    new_gpa = models.DecimalField(max_digits=4, decimal_places=2)
+    changed_by = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True)
+    change_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Change from {self.old_gpa} to {self.new_gpa} by {self.changed_by} on {self.change_date}"
+
 
 
 
@@ -134,6 +158,7 @@ class GradeHistory(models.Model):
     new_score = models.DecimalField(max_digits=5, decimal_places=2)
     changed_by = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True, blank=True)
     change_date = models.DateTimeField(auto_now_add=True)
+    reason_for_change = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"Grade Change for {self.grade.student.full_name}: {self.old_score} -> {self.new_score}"
@@ -166,4 +191,4 @@ class Report(models.Model):
     file = models.FileField(upload_to='reports/')
 
     def __str__(self):
-        return f"Report: {self.name} by {self.generated_by}"
+        return f"Report: {self.name} "

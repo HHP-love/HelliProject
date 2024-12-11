@@ -20,7 +20,12 @@ class Grade(models.Model):
 class SchoolClass(models.Model):
     grade = models.ForeignKey(Grade, on_delete=models.CASCADE, related_name="classes")
     name = models.CharField(max_length=20) 
+    slug = models.SlugField(unique=True, null=True, blank=True)
 
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(f"{self.grade} - {self.name}")  # Slugify the class name with the grade
+        super().save(*args, **kwargs)
     def __str__(self):
         return f"{self.grade} - {self.name}"
 
@@ -28,13 +33,19 @@ class SchoolClass(models.Model):
 
 class Subject(models.Model):
     name = models.CharField(max_length=100)
+    slug = models.SlugField(unique=True, null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)  # Slugify the subject name
+        super().save(*args, **kwargs)
 
 
     def __str__(self):
         return self.name
 
 
-
+from django.utils.text import slugify
 class Teacher(models.Model):
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
@@ -42,10 +53,23 @@ class Teacher(models.Model):
     national_code = models.CharField(max_length=11, unique=True)
     role = models.CharField(max_length=32)
     role2 = models.CharField(max_length=32, null= True, blank=True)
-
+    slug = models.SlugField(unique=True, null=True, blank=True)
 
     def __post_init__(self):
-        self.full_name = self.first_name + " " + self.last_name
+        self.full_name = f"{self.first_name} {self.last_name}"
+    
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(f"{self.first_name} {self.last_name}")  # Slugify the full name
+        super().save(*args, **kwargs)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.get_name_display())  # Slugify the grade name
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.get_name_display()
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.national_code})"
