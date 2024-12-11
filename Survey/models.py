@@ -1,5 +1,5 @@
 from django.db import models
-from Authentication.models import Student
+from Grades.models import Student
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 

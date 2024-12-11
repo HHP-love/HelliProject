@@ -1,41 +1,34 @@
+# serializers.py
 from rest_framework import serializers
-from .models import Teacher, Student, Classroom, Grade, GradeCategory
-
-class TeacherSerializer(serializers.ModelSerializer):
-    full_name = serializers.CharField(source='name', read_only=True)  
-    classes = serializers.PrimaryKeyRelatedField(many=True, read_only=True) 
-
-    class Meta:
-        model = Teacher
-        fields = ['full_name', 'classes']
-
+from .models import *
 
 class StudentSerializer(serializers.ModelSerializer):
-    full_name = serializers.CharField(source='name', read_only=True)
-    classrooms = serializers.PrimaryKeyRelatedField(many=True, read_only=True)  
-
     class Meta:
         model = Student
-        fields = ['full_name', 'classrooms']
+        fields = ['id', 'first_name', 'last_name', 'national_code', 'grade']
+
+    def validate_national_code(self, value):
+        # Validation for national code (for example, check length)
+        if len(value) != 11:
+            raise serializers.ValidationError("National code must be 11 characters.")
+        return value
+
+    def validate(self, data):
+        # Custom validation logic can go here
+        if Student.objects.filter(national_code=data['national_code']).exists():
+            raise serializers.ValidationError("Student with this national code already exists.")
+        return data
 
 
-class ClassroomSerializer(serializers.ModelSerializer):
-    teachers = TeacherSerializer(many=True, read_only=True)
-    students = StudentSerializer(many=True, read_only=True)
-    subject = serializers.CharField(source='subject.name') 
 
+class SemesterSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Classroom
-        fields = ['name', 'teachers', 'students', 'subject', 'semester']
+        model = Semester
+        fields = ['id', 'name', 'start_date', 'end_date']
 
 
-class GradeSerializer(serializers.ModelSerializer):
-    student = serializers.PrimaryKeyRelatedField(queryset=Student.objects.all())
-    classroom = serializers.PrimaryKeyRelatedField(queryset=Classroom.objects.all())
-    grade_category = serializers.CharField(source='GradeCategory.name', read_only=True)
 
+class SubjectSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Grade
-        fields = ['student', 'classroom', 'grade_category', 'score', 'date']
-
-
+        model = Subject
+        fields = ['id', 'name', 'code']

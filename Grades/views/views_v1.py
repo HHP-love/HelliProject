@@ -1,101 +1,125 @@
-from rest_framework import viewsets
-from django_filters import rest_framework as filters
-from rest_framework.filters import SearchFilter
-from rest_framework import permissions
-from drf_spectacular.utils import extend_schema, OpenApiParameter
-from django_filters.rest_framework import DjangoFilterBackend
-from Grades.models import *
-from Grades.serializers import *
-from Grades.filters import *  
-
-class TeacherFilter(filters.FilterSet):
-    classroom = filters.CharFilter(field_name="classes__name", lookup_expr="icontains")
-    subject = filters.CharFilter(field_name="classes__subject__name", lookup_expr="icontains")
-
-    class Meta:
-        model = Teacher
-        fields = ['classroom', 'subject']
+# from rest_framework import viewsets
+# from django_filters import rest_framework as filters
+# from rest_framework.filters import SearchFilter
+# from rest_framework import permissions
+# from drf_spectacular.utils import extend_schema, OpenApiParameter
+# from django_filters.rest_framework import DjangoFilterBackend
+# from Grades.models import *
+# from Grades.serializers import *
+# from Grades.filters import *  
+# from Grades.permissions import *  
 
 
-@extend_schema(
-    request=None,  # no request body
-    responses=TeacherSerializer,
-    parameters=[
-        OpenApiParameter('classroom', description='Filter by classroom name (substring match)', required=False, type=str),
-        OpenApiParameter('subject', description='Filter by subject name (substring match)', required=False, type=str),
-    ],
-    description="Retrieve teacher information with optional filters on classroom and subject."
-)
-class TeacherViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Teacher.objects.prefetch_related('classes__subject').all()
-    serializer_class = TeacherSerializer
-    filter_backends = [filters.DjangoFilterBackend, SearchFilter]
-    filterset_class = TeacherFilter
-    search_fields = ['name']
-    permission_classes = [permissions.IsAuthenticated]
-
-
-class StudentFilter(filters.FilterSet):
-    classroom = filters.CharFilter(field_name="classrooms__name", lookup_expr="icontains")
-    grade = filters.CharFilter(field_name="grades__category__name", lookup_expr="icontains")
-
-    class Meta:
-        model = Student
-        fields = ['classroom', 'grade']
-
-
-@extend_schema(
-    request=None,
-    responses=StudentSerializer,
-    parameters=[
-        OpenApiParameter('classroom', description='Filter by classroom name (substring match)', required=False, type=str),
-        OpenApiParameter('grade', description='Filter by grade category name (substring match)', required=False, type=str),
-    ],
-    description="Retrieve student information with optional filters on classroom and grade."
-)
-class StudentViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Student.objects.prefetch_related('classrooms', 'grades__category').all()
-    serializer_class = StudentSerializer
-    filter_backends = [filters.DjangoFilterBackend]
-    filterset_class = StudentFilter
-    search_fields = ['first_name', 'last_name']
-    permission_classes = [permissions.IsAuthenticated]
-
-
-@extend_schema(
-    request=None,
-    responses=ClassroomSerializer,
-    parameters=[
-        OpenApiParameter('name', description='Filter by classroom name', required=False, type=str),
-        OpenApiParameter('semester', description='Filter by semester name', required=False, type=str),
-    ],
-    description="Retrieve classroom details, including teachers and students, with optional filters."
-)
-class ClassroomViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Classroom.objects.prefetch_related('teachers', 'students', 'subject').all()
-    serializer_class = ClassroomSerializer
-    filter_backends = [filters.DjangoFilterBackend, SearchFilter]
-    filterset_fields = ['name', 'semester__name']
-    search_fields = ['name', 'subject__name']
-    permission_classes = [permissions.IsAuthenticated]
-
-
+# class StudentViewSet(viewsets.ReadOnlyModelViewSet):
+#     queryset = Student.objects.all()
+#     serializer_class = StudentSerializer
+#     filter_backends = [filters.DjangoFilterBackend]
+#     search_fields = ['grade', 'full_name']
+#     permission_classes = [permissions.IsAuthenticated, IsAdminUserOnly]
 
 
 # @extend_schema(
 #     request=None,
-#     responses=GradeSerializer,
+#     responses=ClassroomSerializer,
 #     parameters=[
-#         OpenApiParameter('student__first_name', description='Filter by student first_name', required=False, type=int),
-#         OpenApiParameter('student__last_name', description='Filter by student last_name', required=False, type=int),
-#         OpenApiParameter('category__name', description='Filter by grade category name', required=False, type=str),
+#         OpenApiParameter('name', description='Filter by classroom name', required=False, type=str),
 #     ],
-#     description="Manage and view student grades with optional filters on student, classroom, and category."
+#     description="Retrieve classroom details, including teachers and students, with optional filters."
 # )
-# class GradeViewSet(viewsets.ModelViewSet):
-#     queryset = Grade.objects.all() 
-#     serializer_class = GradeSerializer
-#     filter_backends = [DjangoFilterBackend, SearchFilter]
-#     filterset_class = GradeFilter  
-#     search_fields = ['student__first_name', 'student__last_name', 'classroom__name']
+# class ClassroomViewSet(viewsets.ReadOnlyModelViewSet):
+#     queryset = Classroom.objects.all()
+#     serializer_class = ClassroomSerializer
+#     filter_backends = [filters.DjangoFilterBackend, SearchFilter]
+#     filterset_fields = ['name']
+#     search_fields = ['name', 'subject__name']
 #     permission_classes = [permissions.IsAuthenticated]
+
+
+
+
+# from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiExample
+
+# # @extend_schema_view(
+# #     list=extend_schema(
+# #         summary="Retrieve a list of grades",
+# #         description="Fetch a list of all grades with optional filters for student names and classroom.",
+# #         parameters=[
+# #             OpenApiParameter(name='Student__first_name', type=str, location='query', description='Filter by student first name'),
+# #             OpenApiParameter(name='Student__last_name', type=str, location='query', description='Filter by student last name'),
+# #             OpenApiParameter(name='classroom__name', type=str, location='query', description='Filter by classroom name')
+# #         ],
+# #         examples=[
+# #             OpenApiExample(
+# #                 name="Example Request",
+# #                 description="Filter grades for students with last name 'Smith' in 'Math' classroom.",
+# #                 value={"Student__last_name": "Smith", "classroom__name": "Math"}
+# #             )
+# #         ]
+# #     ),
+# #     retrieve=extend_schema(
+# #         summary="Retrieve a single grade",
+# #         description="Fetch details of a specific grade by its ID.",
+# #     ),
+# #     create=extend_schema(
+# #         summary="Create a new grade",
+# #         description="Add a new grade for a student in a specific classroom.",
+# #     ),
+# #     update=extend_schema(
+# #         summary="Update an existing grade",
+# #         description="Modify details of an existing grade record."
+# #     ),
+# #     destroy=extend_schema(
+# #         summary="Delete a grade",
+# #         description="Remove a grade record by its ID."
+# #     )
+# # )
+# # @extend_schema(exclude=True)
+# # class GradeViewSet(viewsets.ModelViewSet):
+# #     # """
+# #     # API endpoint for managing grades in the system.
+
+# #     # This ViewSet provides full CRUD operations for grade records, including:
+# #     # - Retrieving a list of grades (`GET /grades/`)
+# #     # - Retrieving a specific grade by ID (`GET /grades/{id}/`)
+# #     # - Creating a new grade (`POST /grades/`)
+# #     # - Updating an existing grade (`PUT /grades/{id}/`, `PATCH /grades/{id}/`)
+# #     # - Deleting a grade (`DELETE /grades/{id}/`)
+
+# #     # **Features:**
+# #     # - **Authentication Required**: Only authenticated users can access this endpoint.
+# #     # - **Filtering**: Supports filtering grades by:
+# #     #     - `student__first_name` (case-sensitive exact match on student's first name)
+# #     #     - `student__last_name` (case-sensitive exact match on student's last name)
+# #     #     - `student__national_code` (case-sensitive exact match on student's national code)
+# #     #     - `classroom__name` (case-sensitive exact match on classroom name)
+
+# #     # **Fields:**
+# #     # - `id`: Unique identifier for the grade record.
+# #     # - `student`: Reference to the student associated with this grade.
+# #     # - `classroom`: Reference to the classroom where the grade was assigned.
+# #     # - `grade_value`: The numeric or letter grade assigned.
+# #     # - `created_at`: Timestamp indicating when the grade record was created.
+# #     # - `updated_at`: Timestamp indicating when the grade record was last updated.
+
+# #     # **Example Usage:**
+# #     # - Retrieve grades for a student with the last name "Doe":
+# #     #     ```
+# #     #     GET /grades/?student__last_name=Doe
+# #     #     ```
+# #     # - Retrieve grades for a classroom named "Math 101":
+# #     #     ```
+# #     #     GET /grades/?classroom__name=Math 101
+# #     #     ```
+
+# #     # **Permissions:**
+# #     # - Only authenticated users (`IsAuthenticated`) can access this ViewSet.
+
+# #     # **Notes:**
+# #     # - Ensure proper naming conventions in filters (e.g., field names are case-sensitive).
+# #     # - Pagination may be applied if enabled in the project settings.
+# #     # """
+# #     queryset = Grade.objects.all()
+# #     serializer_class = GradeSerializer
+# #     filter_backends = [DjangoFilterBackend]
+# #     filterset_fields = ['student__first_name', 'student__last_name', 'student__national_code', 'classroom__name']
+# #     permission_classes = [permissions.IsAuthenticated]

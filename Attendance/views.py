@@ -1,6 +1,7 @@
 from django_filters import rest_framework as filters
 from rest_framework import generics, mixins
-from .models import Absence, Student
+from .models import Absence
+from Grades.models import Student
 from .serializers import AbsenceSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404

@@ -1,6 +1,6 @@
 from django.db import models
 
-# مدل پایه تحصیلی
+
 class Grade(models.Model):
     grade_choices = [
         ('7', 'هفتم'),
@@ -16,7 +16,7 @@ class Grade(models.Model):
         return self.get_name_display()
 
 
-# مدل کلاس مدرسه
+
 class SchoolClass(models.Model):
     grade = models.ForeignKey(Grade, on_delete=models.CASCADE, related_name="classes")
     name = models.CharField(max_length=20) 
@@ -36,11 +36,19 @@ class Subject(models.Model):
 
 
 class Teacher(models.Model):
-    name = models.CharField(max_length=100)
+    first_name = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50)
+    full_name = models.CharField(max_length=50, null=True, blank=True)
+    national_code = models.CharField(max_length=11, unique=True)
+    role = models.CharField(max_length=32)
+    role2 = models.CharField(max_length=32, null= True, blank=True)
 
+
+    def __post_init__(self):
+        self.full_name = self.first_name + " " + self.last_name
 
     def __str__(self):
-        return self.name
+        return f"{self.first_name} {self.last_name} ({self.national_code})"
 
 
 
