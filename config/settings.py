@@ -1,6 +1,6 @@
 
 
-
+import os
 from pathlib import Path
 
 
@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'Survey',
     'WeeklySchedule',
     'Grades',
+    'Blog',
     
 ]
 
@@ -116,6 +117,9 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
@@ -138,7 +142,12 @@ REST_FRAMEWORK = {
         'send_verification_code': '6/hour',  
         'anon': '10/minute',  
         'user': '1000/day', 
-    }
+    },
+    'DEFAULT_PARSER_CLASSES': (
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.FormParser',
+        'rest_framework.parsers.MultiPartParser',
+    ),
 }
 
 

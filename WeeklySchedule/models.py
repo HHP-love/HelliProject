@@ -61,11 +61,7 @@ class Teacher(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(f"{self.first_name} {self.last_name}")  # Slugify the full name
-        super().save(*args, **kwargs)
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.get_name_display())  # Slugify the grade name
+            self.full_name = f"{self.first_name} {self.last_name}"
         super().save(*args, **kwargs)
 
     def __str__(self):
