@@ -3,12 +3,12 @@ from django.db import models
 
 class Grade(models.Model):
     grade_choices = [
-        ('7', 'هفتم'),
-        ('8', 'هشتم'),
-        ('9', 'نهم'),
-        ('10', 'دهم'),
-        ('11', 'یازدهم'),
-        ('12', 'دوازدهم'),
+        ('7', '7'),
+        ('8', '8'),
+        ('9', '9'),
+        ('10', '10'),
+        ('11', '11'),
+        ('12', '12'),
     ]
     name = models.CharField(max_length=2, choices=grade_choices, unique=True)
 
