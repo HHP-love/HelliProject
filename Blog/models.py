@@ -1,8 +1,8 @@
 from django.db import models
 from django.core.validators import MinLengthValidator
 from django.utils.text import slugify
-import uuid
 from django.utils import timezone 
+
 # from django.contrib.postgres.fields import JSONField  
 
 class Post(models.Model):
@@ -17,6 +17,8 @@ class Post(models.Model):
         null=True,
         help_text="URL تصویر اصلی پست"
     )
+    summary = models.TextField(default="")
+    category = models.CharField(max_length=40, default="")
     content = models.JSONField(
         default=list,
         help_text="لیستی از محتوای پست شامل متن، تصاویر، ویدیوها و غیره"

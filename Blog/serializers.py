@@ -7,8 +7,8 @@ from django.utils.timezone import now
 class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
-        fields = ["id", "title", "slug", "main_image_url", "content", "is_published", "publish_at", "created_at", "updated_at"]
-        read_only_fields = ["slug", "created_at", "updated_at"]
+        fields = ["id", "title", "slug", "main_image_url",'summary', 'category', "content", "is_published", "publish_at", "created_at", "updated_at"]
+        read_only_fields = ["id", "slug", "created_at", "updated_at"]
 
     def validate_title(self, value):
         """بررسی حداقل طول عنوان"""
@@ -51,5 +51,5 @@ class PostListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ['title', 'created_at', 'main_image_url']
+        fields = ["id", 'title', 'created_at', 'main_image_url', 'summary', 'category']
 

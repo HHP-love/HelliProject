@@ -1,10 +1,13 @@
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from django_filters.rest_framework import DjangoFilterBackend
+from .filters import PostFilter
 from rest_framework.response import Response
 from rest_framework.generics import CreateAPIView
 from drf_spectacular.utils import extend_schema
 from .models import Post
 from .serializers import PostSerializer
+import os
 
 class PostCreateView(CreateAPIView):
     queryset = Post.objects.all()
@@ -40,59 +43,9 @@ class PostCreateView(CreateAPIView):
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
-from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
-import os
-from drf_spectacular.utils import extend_schema, OpenApiParameter
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
-from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
-import os
 
 class FileUploadView(APIView):
-    """
-    Upload a file to the server.
-    """
-
-    @extend_schema(
-        request=None,  # هیچ بدنه خاصی نیاز نیست
-        responses={
-            201: OpenApiResponse(
-                description="File uploaded successfully",
-                examples={
-                    "application/json": {
-                        "file_url": "/media/uploads/your_uploaded_file.jpg"
-                    }
-                }
-            ),
-            400: OpenApiResponse(
-                description="No file provided or invalid file format",
-                examples={
-                    "application/json": {
-                        "error": "No file provided"
-                    }
-                }
-            ),
-            500: OpenApiResponse(
-                description="Internal server error during file upload",
-                examples={
-                    "application/json": {
-                        "error": "Failed to save the file"
-                    }
-                }
-            )
-        },
-        parameters=[
-            OpenApiParameter(
-                name='file',
-                description="The file to upload",
-                required=True,
-                type='file',
-                location='formData'
-            )
-        ]
-    )
     def post(self, request, *args, **kwargs):
         file = request.FILES.get('file')
         if not file:
@@ -123,3 +76,29 @@ class PostListView(generics.ListAPIView):
     queryset = Post.objects.all()
     serializer_class = PostListSerializer
     pagination_class = PostPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = PostFilter
+
+
+# views.py
+
+class PostRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    GET: دریافت جزئیات یک پست
+    PUT/PATCH: ویرایش پست
+    DELETE: حذف پست
+    """
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+
+
+
+
+
+from django.shortcuts import render
+
+def documentation_view(request):
+    """
+    این view صفحه مستندات API را رندر می‌کند.
+    """
+    return render(request, 'documentation.html')
