@@ -8,6 +8,8 @@ from rest_framework.permissions import IsAuthenticated
 from .permissions import *
 from .models import *
 
+#region signup
+
 # Student Signup View
 class StudentSignupView(APIView):
 
@@ -69,6 +71,9 @@ class AdminSignupView(APIView):
             return Response({"message": "Admin registration successful."}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+#endregion
+
+#region login
 
 # Login View
 
@@ -115,13 +120,15 @@ class LoginView(APIView):
                 httponly=True, secure=False if settings.DEBUG else True, samesite='Lax'
             )
             
-            # ارسال توکن در هدر Authorization
             response['Authorization'] = f"Bearer {response_data['access']}"
             return response
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+#endregion
+
+#region logout
 
 class LogoutView(APIView):
     def post(self, request):
@@ -133,6 +140,10 @@ class LogoutView(APIView):
         
         return response
 
+
+#endregion
+
+#region UserProfile
 
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
@@ -157,7 +168,7 @@ class UserProfileView(APIView):
             return Response({"error": "اطلاعات کاربر یافت نشد."}, status=status.HTTP_400_BAD_REQUEST)
 
 
-
+#endregion
 
 
 
@@ -378,8 +389,7 @@ class ChangePassword(APIView):
 
 
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
+
 from rest_framework.permissions import AllowAny
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 from rest_framework.exceptions import NotFound

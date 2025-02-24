@@ -1,14 +1,14 @@
 from django.db import models
 
-# مدل پایه تحصیلی
+
 class Grade(models.Model):
     grade_choices = [
-        ('7', 'هفتم'),
-        ('8', 'هشتم'),
-        ('9', 'نهم'),
-        ('10', 'دهم'),
-        ('11', 'یازدهم'),
-        ('12', 'دوازدهم'),
+        ('7', '7'),
+        ('8', '8'),
+        ('9', '9'),
+        ('10', '10'),
+        ('11', '11'),
+        ('12', '12'),
     ]
     name = models.CharField(max_length=2, choices=grade_choices, unique=True)
 
@@ -16,11 +16,16 @@ class Grade(models.Model):
         return self.get_name_display()
 
 
-# مدل کلاس مدرسه
+
 class SchoolClass(models.Model):
     grade = models.ForeignKey(Grade, on_delete=models.CASCADE, related_name="classes")
     name = models.CharField(max_length=20) 
+    slug = models.SlugField(unique=True, null=True, blank=True)
 
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(f"{self.grade} - {self.name}")  # Slugify the class name with the grade
+        super().save(*args, **kwargs)
     def __str__(self):
         return f"{self.grade} - {self.name}"
 
@@ -28,19 +33,42 @@ class SchoolClass(models.Model):
 
 class Subject(models.Model):
     name = models.CharField(max_length=100)
+    slug = models.SlugField(unique=True, null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)  # Slugify the subject name
+        super().save(*args, **kwargs)
 
 
     def __str__(self):
         return self.name
 
 
-
+from django.utils.text import slugify
 class Teacher(models.Model):
-    name = models.CharField(max_length=100)
+    first_name = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50)
+    full_name = models.CharField(max_length=50, null=True, blank=True)
+    national_code = models.CharField(max_length=11, unique=True)
+    role = models.CharField(max_length=32)
+    role2 = models.CharField(max_length=32, null= True, blank=True)
+    slug = models.SlugField(unique=True, null=True, blank=True)
 
+    def __post_init__(self):
+        self.full_name = f"{self.first_name} {self.last_name}"
+    
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(f"{self.first_name} {self.last_name}")  # Slugify the full name
+            self.full_name = f"{self.first_name} {self.last_name}"
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.name
+        return self.get_name_display()
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} ({self.national_code})"
 
 
 

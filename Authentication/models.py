@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from Grades.models import Student
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, national_code, password=None, role='Student', **extra_fields):
@@ -16,26 +17,33 @@ class CustomUserManager(BaseUserManager):
     def create_superuser(self, national_code, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
-        return self.create_user(national_code, password, role='Admin', **extra_fields)
+        return self.create_user(national_code, password, **extra_fields)
 
 class UserBase(AbstractBaseUser, PermissionsMixin):
+    ROLE_CHOICES = [
+            ('student', 'student'),
+            ('parent', 'parent'),
+            ('teacher', 'teacher'),
+            ('assistant', 'assistant'),
+            ('principal', 'principal'),
+        ]
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     national_code = models.CharField(max_length=11, unique=True)
     password = models.CharField(max_length=128)
-    role = models.CharField(
-        max_length=32,
-        choices=[('Student', 'Student'), ('Admin', 'Admin')],
-        default='Student'
-    )
     grade = models.ForeignKey(
         'WeeklySchedule.Grade',
         on_delete=models.PROTECT,
-        related_name='students',
         null=True,
-        blank=True
+        blank=True,
+        related_name='users'
     )
-    role2 = models.CharField(max_length=32, null= True, blank=True)
+    role = models.CharField(
+        max_length=32,
+        choices=[('Student', 'Student'), ('Admin', 'Admin'), ('Parent', 'Parent')],
+        default='Student'
+    )
+    role2 = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student')
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
@@ -48,11 +56,6 @@ class UserBase(AbstractBaseUser, PermissionsMixin):
         return f"{self.first_name} {self.last_name} - {self.role} ({self.national_code})"
 
 
-class Student(models.Model):
-    name = models.CharField(max_length=64)
-
-    def __str__(self):
-        return f"{self.name})"
 
 
 from django.conf import settings
@@ -114,7 +117,6 @@ class PasswordResetCode(models.Model):
     def generate_code(self):
         self.code = ''.join(random.choices(string.digits, k=6))
         # self.expires_at = timezone.now() + timedelta(minutes=5)
-        print(self.code)
         self.attempts = 0
         self.save()
 
@@ -135,3 +137,50 @@ class PasswordResetCode(models.Model):
         return True
 
 
+class Parent(models.Model):
+    first_name = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50)
+    national_code = models.CharField(max_length=11, unique=True)
+    students = models.ManyToManyField(Student, related_name='parents')
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} ({self.national_code})"
+
+
+
+
+
+
+
+
+
+
+
+
+from django.conf import settings
+
+class Role(models.Model):
+    name = models.CharField(max_length=50, unique=True)  # نام نقش
+    description = models.TextField(blank=True, null=True)  # توضیحات نقش
+    permissions = models.ManyToManyField('Permission', blank=True)  # ارتباط با دسترسی‌ها
+
+    def __str__(self):
+        return self.name
+
+
+class Permission(models.Model):
+    name = models.CharField(max_length=50, unique=True)  
+    codename = models.CharField(max_length=50, unique=True)  
+    description = models.TextField(blank=True, null=True)  
+
+    def __str__(self):
+        return self.name
+
+
+class UserRole(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='roles')
+    role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name='users')
+    assigned_at = models.DateTimeField(auto_now_add=True)  
+
+    def __str__(self):
+        return f"{self.user} - {self.role}"
