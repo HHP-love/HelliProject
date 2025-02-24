@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مستندات API مدیریت غیاب</title>
+    <style>
+        body {
+            font-family: Tahoma, sans-serif;
+            line-height: 1.8;
+            background-color: #f8f9fa;
+            color: #333;
+            padding: 30px;
+            direction: rtl;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        pre {
+            background-color: #ecf0f1;
+            border: 1px solid #bdc3c7;
+            padding: 10px;
+            overflow-x: auto;
+            border-radius: 5px;
+            direction: ltr;
+        }
+        code {
+            background-color: #ecf0f1;
+            padding: 2px 6px;
+            border-radius: 3px;
+            direction: ltr;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+        .parameter {
+            font-weight: bold;
+            color: #2980b9;
+        }
+        .response-code {
+            font-weight: bold;
+            color: #27ae60;
+        }
+        .error-response {
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>مستندات API مدیریت غیاب</h1>
+    <p>این مستندات، اطلاعات مربوط به API برای مدیریت غیاب دانش‌آموزان را شرح می‌دهد. این API به شما امکان فیلتر کردن، بروزرسانی، حذف و ثبت سوابق غیاب را می‌دهد، همچنین گزارش‌های غیاب را به فرمت‌های HTML و PDF تولید می‌کند.</p>
+
+    <div class="section">
+        <h2>1. لیست غیاب و فیلترینگ</h2>
+        <h3>آدرس API:</h3>
+        <pre><code>POST /attendance/absences/filter/</code></pre>
+        <p>این API به شما امکان می‌دهد تا غیاب‌ها را بر اساس پارامترهای مختلف فیلتر کنید.</p>
+
+        <h3>مجوزهای دسترسی:</h3>
+        <p><strong>توکن JWT</strong> در هدر <strong>Authorization</strong> به فرمت زیر باید ارسال شود:
+            <code>Bearer &lt;your_token_here&gt;</code>
+        </p>
+
+        <h3>نمونه درخواست:</h3>
+        <pre><code>
+{
+    "student__first_name": "Ali",
+    "student__last_name": "Rezaei",
+    "student__grade_range": [1, 3],
+    "date_range": {
+        "start": "2024-01-01",
+        "end": "2024-12-31"
+    },
+    "status": "absent"
+}
+        </code></pre>
+
+        <h3>پاسخ مورد انتظار:</h3>
+        <pre><code>
+کد وضعیت: 200 OK
+
+پاسخ:
+[
+    {
+        "student": "Ali Rezaei",
+        "date": "2024-01-15",
+        "status": "absent"
+    },
+    {
+        "student": "Ali Rezaei",
+        "date": "2024-02-20",
+        "status": "absent"
+    }
+]
+        </code></pre>
+
+        <h3>پاسخ‌های خطا:</h3>
+        <pre><code>
+کد وضعیت: 400 Bad Request
+
+پاسخ:
+{
+    "date_range": [
+        "Start date must be before end date."
+    ],
+    "student__grade_range": [
+        "Grade must be a valid range."
+    ]
+}
+        </code></pre>
+
+        <h3>پارامترهای فیلتر:</h3>
+        <ul>
+            <li><span class="parameter">student__first_name</span>: تطابق جزئی (حساس به حروف بزرگ و کوچک نیست)</li>
+            <li><span class="parameter">student__last_name</span>: تطابق جزئی (حساس به حروف بزرگ و کوچک نیست)</li>
+            <li><span class="parameter">student__grade</span>: تطابق دقیق</li>
+            <li><span class="parameter">student__grade_range</span>: فیلتر بازه‌ای</li>
+            <li><span class="parameter">student__national_code</span>: تطابق دقیق</li>
+            <li><span class="parameter">date</span>: تطابق دقیق</li>
+            <li><span class="parameter">date_range</span>: فیلتر بازه‌ای از-تا</li>
+            <li><span class="parameter">status</span>: مقادیر مجاز (حاضر، غایب)</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>2. جزئیات غیاب</h2>
+        <h3>آدرس API:</h3>
+        <pre><code>PUT /attendance/absences/detail/{national_code}/{date}/</code></pre>
+        <p>برای بروزرسانی رکورد غیاب موجود، باید کد ملی دانش‌آموز و تاریخ غیاب را وارد کنید و فیلدهای مورد نظر را در بدنه درخواست قرار دهید.</p>
+
+        <h3>پاسخ:</h3>
+        <pre><code>
+کد وضعیت: 200 OK
+پاسخ:
+{
+    "student": "Ali Rezaei",
+    "date": "2024-01-15",
+    "status": "absent"
+}
+        </code></pre>
+
+        <h3>پاسخ خطا:</h3>
+        <pre><code>
+کد وضعیت: 400 Bad Request
+پاسخ:
+{
+    "status": [
+        "This field is required."
+    ]
+}
+        </code></pre>
+    </div>
+
+    <div class="section">
+        <h2>3. ثبت غیاب</h2>
+        <h3>آدرس API:</h3>
+        <pre><code>POST /attendance/absences/create/</code></pre>
+        <p>برای ثبت یک غیاب جدید برای دانش‌آموز بر اساس کد ملی و تاریخ غیاب، از این API استفاده کنید.</p>
+
+        <h3>نمونه درخواست:</h3>
+        <pre><code>
+{
+    "absences": [
+        {
+            "national_code": "1234567890",
+            "date": "2024-01-15",
+            "status": "absent"
+        },
+        {
+            "national_code": "0987654321",
+            "date": "2024-01-16",
+            "status": "present"
+        }
+    ]
+}
+        </code></pre>
+
+        <h3>پاسخ:</h3>
+        <pre><code>
+کد وضعیت: 201 Created
+پاسخ:
+[
+    {
+        "student": "Ali Rezaei",
+        "date": "2024-01-15",
+        "status": "absent"
+    },
+    {
+        "student": "Ali Rezaei",
+        "date": "2024-01-16",
+        "status": "present"
+    }
+]
+        </code></pre>
+
+        <h3>پاسخ خطا:</h3>
+        <pre><code>
+کد وضعیت: 400 Bad Request
+پاسخ:
+{
+    "error": "Missing national code, date or status."
+}
+        </code></pre>
+    </div>
+
+    <div class="section">
+        <h2>4. تولید گزارش غیاب (PDF)</h2>
+        <h3>آدرس API:</h3>
+        <pre><code>POST /attendance/absences/pdf/</code></pre>
+        <p>گزارش غیاب‌ها با فیلترهای مشخص‌شده را به فرمت PDF تولید می‌کند.</p>
+
+        <h3>پاسخ:</h3>
+        <pre><code>
+کد وضعیت: 200 OK
+پاسخ:
+{
+    "file_url": "http://127.0.0.1:8000/media/absence_report.pdf"
+}
+        </code></pre>
+    </div>
+
+    <div class="section">
+        <h2>5. تولید گزارش غیاب (HTML)</h2>
+        <h3>آدرس API:</h3>
+        <pre><code>POST /attendance/absences/html/</code></pre>
+        <p>گزارش غیاب‌ها با فیلترهای مشخص‌شده را به فرمت HTML تولید می‌کند.</p>0
+
+        <h3>پاسخ:</h3>
+        <pre><code>
+کد وضعیت: 200 OK
+پاسخ:
+{
+    "file_url": "http://127.0.0.1:8000/media/absence_report.html"
+}
+        </code></pre>
+    </div>
+</body>
+</html>
