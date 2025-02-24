@@ -153,10 +153,6 @@ class Parent(models.Model):
 
 
 
-
-
-
-
 from django.conf import settings
 
 class Role(models.Model):

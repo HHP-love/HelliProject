@@ -23,7 +23,7 @@ from rest_framework.generics import UpdateAPIView, ListAPIView
 #region student information
 
 class StudentListView(generics.ListAPIView):
-    permission_classes = [permissions.IsAuthenticated, IsAdminUserOnly]
+    # permission_classes = [permissions.IsAuthenticated, IsAdminUserOnly]
     queryset = Student.objects.all()
     serializer_class = StudentSerializer
 

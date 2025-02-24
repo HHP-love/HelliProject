@@ -5,8 +5,9 @@ from Grades.models import Student
 
 class Absence(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='absences')  
+    grade = models.ForeignKey(Student, on_delete=models.CASCADE, null=True, blank=True) 
     date = models.DateField()
-    status = models.CharField(default="present", max_length=20)   #presence absence   delay
+    status = models.CharField(default="present", max_length=20)   #presence absence delay
 
     class Meta:
         unique_together = ('student', 'date') 

@@ -3,15 +3,21 @@ from django.db import models
 
 class Grade(models.Model):
     grade_choices = [
-        ('7', '7'),
-        ('8', '8'),
-        ('9', '9'),
-        ('10', '10'),
-        ('11', '11'),
-        ('12', '12'),
+        ('7/1', '7/1'),
+        ('7/2', '7/2'),
+        ('8/1', '8/1'),
+        ('8/2', '8/2'),
+        ('9/1', '9/1'),
+        ('9/2', '9/2'),
+        ('10/ریاضی', '10/ریاضی'),
+        ('10/تجربی', '10/تجربی'),
+        ('11/ریاضی', '11/ریاضی'),
+        ('11/تجربی', '11/تجربی'),
+        ('12/ریاضی', '12/ریاضی'),
+        ('12/تجربی', '12/تجربی'),
     ]
-    name = models.CharField(max_length=2, choices=grade_choices, unique=True)
 
+    name = models.CharField(max_length=15, choices=grade_choices)
     def __str__(self):
         return self.get_name_display()
 

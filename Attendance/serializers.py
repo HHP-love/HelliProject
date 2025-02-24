@@ -20,4 +20,5 @@ class AbsenceSerializer(serializers.ModelSerializer):
         """
         representation = super().to_representation(instance)
         representation['student'] = instance.student.first_name + " " + instance.student.last_name
+        representation['grade'] = instance.student.grade
         return representation

@@ -107,61 +107,6 @@ class AbsenceListView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 
-# @extend_schema(
-#     summary="Retrieve a list of absences",
-#     description=(
-#         "This endpoint retrieves a list of all absence records in the system. "
-#         "You can apply filters based on student details such as name, grade, and national code, "
-#         "as well as the absence date and presence status. "
-#         "The response is paginated and includes a detailed list of absences."
-#     ),
-#     parameters=[
-#         OpenApiParameter(
-#             name='student__name', 
-#             description="Filter absences by the student's name (partial match allowed).",
-#             required=False,
-#             type=OpenApiTypes.STR
-#         ),
-#         OpenApiParameter(
-#             name='student__grade', 
-#             description="Filter absences by the student's grade (exact match).",
-#             required=False,
-#             type=OpenApiTypes.INT
-#         ),
-#         OpenApiParameter(
-#             name='student__national_code', 
-#             description="Filter absences by the student's unique national code.",
-#             required=False,
-#             type=OpenApiTypes.STR
-#         ),
-#         OpenApiParameter(
-#             name='date', 
-#             description="Filter absences by the date of absence (in YYYY-MM-DD format).",
-#             required=False,
-#             type=OpenApiTypes.DATE
-#         ),
-#         OpenApiParameter(
-#             name='is_present', 
-#             description="Filter absences based on the presence status (True for present, False for absent).",
-#             required=False,
-#             type=OpenApiTypes.BOOL
-#         ),
-#     ],
-#     responses={
-#         200: AbsenceSerializer(many=True),
-#         400: OpenApiTypes.OBJECT,
-#         404: OpenApiTypes.OBJECT,
-#     }
-# )
-# class AbsenceListView(generics.ListAPIView):
-#     queryset = Absence.objects.all()
-#     serializer_class = AbsenceSerializer
-#     filter_backends = [DjangoFilterBackend]
-#     filterset_fields = ['student__first_name', 'student__last_name','student__grade', 'student__national_code', 'date', 'status']
-
-# #endregion
-
-
 
 #region AbsenceDetailView
 
@@ -252,7 +197,6 @@ class RecordAbsenceView(APIView):
             return Response({"error": "فرمت تاریخ نادرست است. از YYYY-MM-DD استفاده کنید."},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        # بررسی وجود دانش‌آموز با کد ملی
         try:
             student = Student.objects.get(national_code=national_code)
         except Student.DoesNotExist:
@@ -261,16 +205,105 @@ class RecordAbsenceView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # بررسی عدم تکرار غیبت برای همان تاریخ
         if Absence.objects.filter(student=student, date=date).exists():
             return Response(
                 {"error": "این دانش‌آموز در این تاریخ قبلاً ثبت شده است."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # ثبت غیبت
-        absence = Absence.objects.create(student=student, date=date, status="absence")
+        absence = Absence.objects.create(student=student, date=date, status="غایب")
         serializer = AbsenceSerializer(absence)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
+from django.http import JsonResponse
+from django.template.loader import render_to_string
+from weasyprint import HTML
+from .models import Absence
+from .serializers import AbsenceSerializer
+from .filters import AbsenceFilter
+from django.conf import settings
+import os
+
+class AbsencePdfReportView(APIView):
+    """
+    ویو برای دریافت گزارش PDF از غیبت‌ها با فیلترهای مختلف.
+    """
+
+    def post(self, request, *args, **kwargs):
+        data = request.data
+        queryset = Absence.objects.all()
+
+        filterset = AbsenceFilter(data, queryset=queryset)
+        if not filterset.is_valid():
+            return Response(filterset.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        absences = filterset.qs
+        absence_data = AbsenceSerializer(absences, many=True).data
+
+        # مسیر فایل HTML
+        html_filename = 'absence_report.html'
+        html_path = os.path.join(settings.MEDIA_ROOT, html_filename)
+
+        # استفاده از قالب HTML برای گزارش
+        html_content = render_to_string('absence_report_template.html', {'absences': absence_data})
+
+        # ذخیره فایل HTML در پوشه media
+        with open(html_path, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+
+        # تبدیل HTML به PDF با استفاده از WeasyPrint
+        pdf_filename = 'absence_report.pdf'
+        pdf_path = os.path.join(settings.MEDIA_ROOT, pdf_filename)
+
+        # تبدیل HTML به PDF و ذخیره آن
+        HTML(string=html_content).write_pdf(pdf_path)
+
+        # لینک فایل PDF برای دانلود
+        file_url = os.path.join(settings.MEDIA_URL, pdf_filename)
+
+        return JsonResponse({"file_url": file_url})
+
+
+
+
+from django.shortcuts import render
+from django.http import HttpResponse
+from .models import Absence
+from .serializers import AbsenceSerializer
+from django.template.loader import render_to_string
+from .filters import AbsenceFilter
+from django.conf import settings
+import os
+
+class AbsenceHtmlReportView(APIView):
+    """
+    ویو برای دریافت گزارش HTML از غیبت‌ها با فیلترهای مختلف.
+    """
+
+    def post(self, request, *args, **kwargs):
+        data = request.data
+        queryset = Absence.objects.all()
+
+        filterset = AbsenceFilter(data, queryset=queryset)
+        if not filterset.is_valid():
+            return Response(filterset.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        absences = filterset.qs
+        absence_data = AbsenceSerializer(absences, many=True).data
+
+        # مسیر فایل HTML
+        html_filename = 'absence_report.html'
+        html_path = os.path.join(settings.MEDIA_ROOT, html_filename)
+
+        # استفاده از قالب HTML برای گزارش
+        html_content = render_to_string('absence_report_template.html', {'absences': absence_data})
+
+        # ذخیره فایل HTML در پوشه media
+        with open(html_path, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+
+        # لینک فایل برای دانلود
+        file_url = os.path.join(settings.MEDIA_URL, html_filename)
+
+        return JsonResponse({"file_url": file_url})
