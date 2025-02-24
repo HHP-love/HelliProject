@@ -1,6 +1,59 @@
-/venv
-./venv
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
 venv/
-venv/.
-html.html
-django.log
+env/
+*.env
+*.venv
+
+# Django secret key & settings
+*.secret
+.env
+.env.*
+
+# Django stuff
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+*.log
+
+# Migrations (optional: keep in version control if team collaboration requires it)
+**/migrations/*.py
+!**/migrations/__init__.py
+
+# Celery task queue
+celerybeat-schedule
+
+# Node.js dependencies (if using npm for frontend)
+node_modules/
+
+# VSCode & JetBrains IDE settings
+.vscode/
+.idea/
+
+# Pytest & coverage reports
+.coverage
+htmlcov/
+*.cover
+*.py,cover
+
+# MyPy type checking
+.mypy_cache/
+
+# Pipenv & Poetry
+Pipfile
+Pipfile.lock
+poetry.lock
+
+# Docker & deployment
+*.pid
+docker-compose.override.yml
+
+# macOS & Linux system files
+.DS_Store
+*.swp
+*~
