@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import AbsenceListView, AbsenceDetailView, RecordAbsenceView, AbsencePdfReportView, AbsenceHtmlReportView, documentation_view
+from .views import AbsenceListView, GetAbsencesByNationalCodeView, RecordAbsenceView, AbsencePdfReportView, AbsenceHtmlReportView, documentation_view
 from Grades.views import StudentListView
 
 urlpatterns = [
@@ -9,8 +9,8 @@ urlpatterns = [
     # ثبت غیبت جدید
     path('create/', RecordAbsenceView.as_view(), name='absence-create'),
     
-    # جزئیات غیبت بر اساس کد ملی و تاریخ
-    path('detail/<str:national_code>/<str:date>/', AbsenceDetailView.as_view(), name='absence-detail'),
+    #جزئیات غیبت بر اساس کد ملی 
+    path('detail/<str:national_code>/', GetAbsencesByNationalCodeView.as_view(), name='absence-detail'),
     
     # گزارش PDF غیبت‌ها
     path('absences/pdf/', AbsencePdfReportView.as_view(), name='absence-pdf'),

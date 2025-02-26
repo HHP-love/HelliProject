@@ -53,3 +53,17 @@ class PostListSerializer(serializers.ModelSerializer):
         model = Post
         fields = ["id", 'title', 'created_at', 'main_image_url', 'summary', 'category']
 
+
+
+from .models import Comment
+
+class CommentSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField(read_only=True)  # فقط نمایش نام کاربر
+
+    class Meta:
+        model = Comment
+        fields = ["id", "user", "post", "content", "created_at", "updated_at"]
+        read_only_fields = ["id", "user", "created_at", "updated_at"] 
+
+
+

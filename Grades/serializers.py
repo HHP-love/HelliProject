@@ -5,7 +5,7 @@ from .models import *
 class StudentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
-        fields = ['id', 'first_name', 'last_name', 'slug', 'grade']  
+        fields = ['id', 'first_name', 'last_name', 'national_code', 'grade']  
 
     def validate_slug(self, value):
         if Student.objects.filter(slug=value).exists():

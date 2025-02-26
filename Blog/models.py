@@ -49,3 +49,22 @@ class Post(models.Model):
 
 
 
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+class Comment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="comments")
+    content = models.TextField()
+    parent = models.ForeignKey(
+        "self", on_delete=models.CASCADE, null=True, blank=True, related_name="replies"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Comment by {self.user} on {self.post}"

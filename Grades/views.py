@@ -54,7 +54,7 @@ class StudentListView(generics.ListAPIView):
         if grade:
             queryset = queryset.filter(grade=grade)
 
-        queryset = queryset.prefetch_related('classrooms')  
+
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)

@@ -68,8 +68,8 @@ from .serializers import PostListSerializer
 
 class PostPagination(PageNumberPagination):
     page_size = 10  
-    page_size_query_param = 'page_size'  # اگر بخواهید سایز صفحه را از URL بگیرید
-    max_page_size = 100  # بیشترین تعداد آیتم‌ها در یک صفحه
+    page_size_query_param = 'page_size'  
+    max_page_size = 100  
 
 # لیست پست‌ها
 class PostListView(generics.ListAPIView):
@@ -102,3 +102,28 @@ def documentation_view(request):
     این view صفحه مستندات API را رندر می‌کند.
     """
     return render(request, 'documentation.html')
+
+
+
+from rest_framework import generics, permissions
+from .models import Comment
+from .serializers import CommentSerializer
+from .filters import CommentFilter
+
+
+class CommentListCreateView(generics.ListCreateAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]  
+    filter_backends = [DjangoFilterBackend]  # اضافه کردن فیلترینگ
+    filterset_class = CommentFilter 
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)  
+
+class CommentUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user)  

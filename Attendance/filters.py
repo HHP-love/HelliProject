@@ -4,8 +4,7 @@ from .models import Absence
 class AbsenceFilter(filters.FilterSet):
     student__first_name = filters.CharFilter(lookup_expr='icontains')
     student__last_name = filters.CharFilter(lookup_expr='icontains')
-    student__grade = filters.NumberFilter()
-    student__grade_range = filters.NumericRangeFilter(field_name='student__grade')
+    student__grade = filters.CharFilter()
     student__national_code = filters.CharFilter(lookup_expr='exact')
     date = filters.DateFilter()
     date_range = filters.DateFromToRangeFilter(field_name='date')
@@ -17,7 +16,6 @@ class AbsenceFilter(filters.FilterSet):
             'student__first_name',
             'student__last_name',
             'student__grade',
-            'student__grade_range',
             'student__national_code',
             'date',
             'date_range',

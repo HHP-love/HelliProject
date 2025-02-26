@@ -38,11 +38,13 @@ class UserBase(AbstractBaseUser, PermissionsMixin):
         blank=True,
         related_name='users'
     )
+    is_blog_admin = models.BooleanField(default=False, null=True, blank=True)
     role = models.CharField(
         max_length=32,
         choices=[('Student', 'Student'), ('Admin', 'Admin'), ('Parent', 'Parent')],
         default='Student'
     )
+
     role2 = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student')
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -53,7 +55,7 @@ class UserBase(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = ['first_name', 'last_name']
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name} - {self.role} ({self.national_code})"
+        return f"{self.first_name} {self.last_name} - {self.role} "
 
 
 
